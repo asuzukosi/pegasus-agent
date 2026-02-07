@@ -1,6 +1,6 @@
 ## Pegasus:  Modular Agent Runtime for buiding long running agent
 
-<img src="./assets/pegasus.jpg" alt="Pegasus Logo" width="300"/>
+<img src="./assets/pegasus.png" alt="Pegasus Logo" width="300"/>
 
 
 ## Introduction
