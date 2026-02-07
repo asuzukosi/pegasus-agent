@@ -4,7 +4,7 @@ from setuptools import setup
 setup(
     name='src/pegasus',
     version='0.1.0',    
-    description='A micro generative AI library',
+    description='A lightweight terminal agent framework',
     url='https://github.com/asuzukosi/pegasus',
     author='Asuzu Kosi',
     author_email='keloasuzu@yahoo.com',
