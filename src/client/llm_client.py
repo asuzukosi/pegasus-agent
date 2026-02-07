@@ -2,6 +2,7 @@ import os
 import asyncio
 from typing import Any, Dict, List, AsyncGenerator
 from openai import AsyncOpenAI
+from openai.
 
 OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
