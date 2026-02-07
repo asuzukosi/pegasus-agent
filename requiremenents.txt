@@ -4,3 +4,4 @@ openai
 retry
 click
 rich
+tiktoken
