@@ -3,3 +3,4 @@ xmltodict
 openai
 retry
 click
+rich

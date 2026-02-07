@@ -10,7 +10,7 @@ setup(
     author_email='keloasuzu@yahoo.com',
     license='BSD 2-clause',
     packages=['pegasus'],
-    install_requires=['anthropic'],
+    install_requires=['anthropic', 'click', 'openai', 'retry', 'rich'],
 
     classifiers=[
         'Development Status :: 1 - Planning',

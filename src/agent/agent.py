@@ -24,8 +24,10 @@ class Agent:
         response_text = ''
         async for event in self._client.chat_completion(messages=messages, stream=True):
             if event.type == StreamEventType.TEXT_DELTA:
-                response_text += event.text_delta.content
-                yield AgentEvent.text_delta(event.text_delta.content)
+                if event.text_delta.content:
+                    content = event.text_delta.content
+                    response_text += content
+                    yield AgentEvent.text_delta(content)
             elif event.type == StreamEventType.ERROR:
                 yield AgentEvent.agent_error(event.error if event.error else 'Unknown error', {})
         if response_text:
