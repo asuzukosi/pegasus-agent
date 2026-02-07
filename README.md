@@ -1,7 +1,8 @@
-## Pegasus:  Modular Agent Runtime for buiding long running agent
+## Pegasus:  Modular Agent Runtime For Buiding Long Running Agents
 
-<img src="./assets/pegasus.png" alt="Pegasus Logo" width="300"/>
-
+<p align="center">
+  <img src="./assets/pegasus.png" alt="Pegasus Logo" width="300"/>
+</p>
 
 ## Introduction
 Pegasus is a set of modular building blocks used to compose agent runtimes for different usecases. 
