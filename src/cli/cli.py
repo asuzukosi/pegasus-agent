@@ -1,23 +1,28 @@
 import click
-from src.client.llm_client import LLMClient
-
+import asyncio
+from src.agent.agent import Agent
 
 
 class CLI:
     def __init__(self) -> None:
-        pass
+        self._agent | None = None
 
-    def run_single(self):
-        pass
+    async def run_single(self, message: str) -> None:
+        async with Agent() as agent:
+            self._agent = agent
+            self._process_message(message)
+            async for event in self._agent.run(message):
+                print(event)
 
+    async def _process_message(self, message: str) -> None:
+        pass
 
 @click.command()
-@click.option('--model', type=str, default='gpt-4o-mini', help='The model to use for the chat completion.')
-@click.option('--stream', is_flag=True, help='Whether to stream the response.')
-@click.option('--messages', type=str, help='The messages to send to the chat completion.')
-async def command_entrypoint(model: str, stream: bool, messages: str) -> None:
-    client = LLMClient()
-    messages = [{"role": "user", "content": messages}] if messages else [{"role": "system", "content": "Hello, how are you?"}]
-    async for event in client.chat_completion(messages=messages, stream=stream):
-        print(event)
-    await client.close()
+@click.option('--message', type=str, help='The message to send to the chat completion.')
+async def run_cli(message: str) -> None:
+    print("message:", message)
+    if message:
+        cli = CLI()
+        asyncio.run(cli.run_single(message))
+    else:
+        print("No message provided")

@@ -1,5 +1,5 @@
 from typing import AsyncGenerator
-from src.agent.results import AgentEvent
+from src.agent.results import AgentEvent, AgentEventType
 from src.client.llm_client import LLMClient
 from src.client.response import StreamEventType
 
@@ -15,7 +15,9 @@ class Agent:
         # TODO: add user message to context as the agent uses the context to generate the responses
         async for event in self._agentic_loop():
             yield event
-        yield AgentEvent.agent_end(None, None)
+            if event.type == AgentEventType.TEXT_COMPLETE:
+                final_response = event.data['content']
+        yield AgentEvent.agent_end(final_response)
 
     async def _agentic_loop(self) -> AsyncGenerator[AgentEvent, None]:
         messages = [{"role": "user", "content": "Hello, how are you?"}]
@@ -28,3 +30,12 @@ class Agent:
                 yield AgentEvent.agent_error(event.error if event.error else 'Unknown error', {})
         if response_text:
             yield AgentEvent.text_complete(response_text)
+
+
+    async def __aenter__(self) -> 'Agent':
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        if self._client is not None:
+            await self._client.close()
+            self._client = None
