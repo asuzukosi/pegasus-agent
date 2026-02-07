@@ -1,6 +1,6 @@
 import os
 import asyncio
-from src.client.response import TextDelta, TokenUsage, StreamEvent, EventType
+from src.client.response import TextDelta, TokenUsage, StreamEvent, StreamEventType
 from typing import Any, Dict, List, AsyncGenerator
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
