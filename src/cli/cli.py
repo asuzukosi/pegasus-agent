@@ -2,6 +2,15 @@ import click
 from src.client.llm_client import LLMClient
 
 
+
+class CLI:
+    def __init__(self) -> None:
+        pass
+
+    def run_single(self):
+        pass
+
+
 @click.command()
 @click.option('--model', type=str, default='gpt-4o-mini', help='The model to use for the chat completion.')
 @click.option('--stream', is_flag=True, help='Whether to stream the response.')
