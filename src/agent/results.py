@@ -13,6 +13,10 @@ class AgentEventType(str, Enum):
     TEXT_DELTA = 'text_delta'
     TEXT_COMPLETE = 'text_complete'
 
+    # tool call events
+    TOOL_CALL_START = "tool_call_start"
+    TOOL_CALL_COMPLETE = "tool_call_complete"
+
 
 
 @dataclass
@@ -39,3 +43,19 @@ class AgentEvent:
     @classmethod
     def text_complete(cls, content: str) -> 'AgentEvent':
         return cls(type=AgentEventType.TEXT_COMPLETE, data={'content': content})
+    
+    @classmethod
+    def tool_call_start(cls, call_id: str, name: str, arguments: Dict[str, Any]) -> 'AgentEvent':
+        return cls(
+            type=AgentEventType.TOOL_CALL_START,
+            data={'call_id': call_id, 'name': name, 'arguments': arguments}
+        )
+    
+    @classmethod
+    def tool_call_complete(cls, call_id: str, name: str, success: bool, output: str,metadata: dict[str, Any] = {}, truncated: bool = False, error: str | None=None) -> 'AgentEvent':
+        return cls(
+            type=AgentEventType.TOOL_CALL_COMPLETE,
+            data={'call_id': call_id, 'name': name, 'success': success, 'output': output,
+                   'metadata': metadata, 'truncated': truncated, 'error': error if error else None}
+        )
+    

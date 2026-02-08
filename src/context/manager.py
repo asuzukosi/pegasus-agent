@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from src.context.data import MessageItem, MessageRole
+from src.context.data import MessageItem, MessageRole, ToolResultMessage
 from src.prompts.system import get_system_prompt
 from src.utils.text import count_tokens
 
@@ -13,8 +13,8 @@ class ContextManager:
     def add_user_message(self, content: str) -> None:
         item = MessageItem(
             role=MessageRole.USER,
-            content=content, 
-            token_count=count_tokens(content or "", self._model_name)
+            content=content or "", 
+            token_count=count_tokens(content or "", self._model_name or "")
         )
         self._messages.append(item)
  
@@ -22,7 +22,7 @@ class ContextManager:
         item = MessageItem(
             role=MessageRole.ASSISTANT,
             content=content or "", 
-            token_count=count_tokens(content or "", self._model_name)
+            token_count=count_tokens(content or "", self._model_name or "")
         )
         self._messages.append(item)
  
@@ -33,3 +33,12 @@ class ContextManager:
         for item in self._messages:
             messages.append(item.to_dict())
         return messages
+    
+    def add_tool_result(self, tool_result: ToolResultMessage) -> None:
+        item = MessageItem(
+            role=MessageRole.TOOL,
+            content=tool_result.content,
+            tool_call_id=tool_result.tool_call_id,
+            token_count=count_tokens(tool_result.content or "", self._model_name or "")
+        )
+        self._messages.append(item)
