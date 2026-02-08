@@ -37,6 +37,18 @@ class CLI:
             elif event.type == AgentEventType.AGENT_ERROR:
                 error = event.data.get("error", "Unknown error")
                 self._tui._console.print(f"[error]Error: {error}[/error]")
+
+            elif event.type == AgentEventType.TOOL_CALL_START:
+                tool_name = event.data.get("name", "")
+                call_id = event.data.get("call_id", "")
+                arguments = event.data.get("arguments", {})
+                tool = self._agent._tool_registry.get(tool_name)
+                tool_kind = None
+                if not tool:
+                    tool_kind = None
+                else:
+                    tool_kind = tool.type
+                self._tui.stream_tool_call_start(call_id, tool_name, arguments, tool_kind)
         return final_response
 
 @click.command()
