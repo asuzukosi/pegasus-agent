@@ -1,4 +1,3 @@
-import os
 from src.client.response import TextDelta, TokenUsage, StreamEvent, StreamEventType, ToolCallDelta, ToolCall, parse_tool_call_arguments
 from typing import Any, Dict, List, AsyncGenerator
 from openai import AsyncOpenAI
@@ -6,20 +5,20 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai import RateLimitError, APIError
 from retry import retry
 from typing import Union
+from src.config.config import Config
 
-OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
-OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 
 class LLMClient:
-    def __init__(self) -> None:
+    def __init__(self, config: Config) -> None:
         self._client: AsyncOpenAI | None = None
+        self._config = config
 
 
     def _get_client(self) -> AsyncOpenAI:
         if self._client is None:
-            self._client = AsyncOpenAI(api_key=OPENROUTER_API_KEY, 
-                                       model='', 
-                                       base_url=OPENROUTER_BASE_URL)
+            self._client = AsyncOpenAI(api_key=self._config.api_key, 
+                                       model=self._config.model_name, 
+                                       base_url=self._config.base_url)
         return self._client
     
     async def close(self) -> None:

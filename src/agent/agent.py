@@ -7,10 +7,12 @@ from src.context.data import ToolResultMessage
 from src.context.manager import ContextManager
 from src.tools.registry import create_default_registry, ToolRegistry
 from pathlib import Path
+from src.config.config import Config
 
 class Agent:
-    def __init__(self) -> None:
-        self._client = LLMClient()
+    def __init__(self, config: Config) -> None:
+        self._config = config
+        self._client = LLMClient(self._config)
         self._context_manager = ContextManager()
         self._tool_registry: ToolRegistry = create_default_registry()
         # keep track of session management

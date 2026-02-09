@@ -5,3 +5,5 @@ retry
 click
 rich
 tiktoken
+platformdirs
+tomli

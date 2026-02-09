@@ -5,15 +5,18 @@ from src.agent.results import AgentEventType
 from src.renderers.tui import TUI
 import sys
 from pathlib import Path
+from src.config.config import Config
+from src.config.loader import load_config
 
 
 class CLI:
-    def __init__(self) -> None:
+    def __init__(self, config: Config) -> None:
+        self._config = config
         self._agent | None = None
         self._tui = TUI()
 
     async def run_single(self, message: str) -> None:
-        async with Agent() as agent:
+        async with Agent(self._config) as agent:
             self._agent = agent
             self._process_message(message)
 
@@ -23,7 +26,7 @@ class CLI:
             f"cwd: {Path.cwd()}",
             "commands: /help /config /approval /model /exit"])
         
-        async with Agent() as agent:
+        async with Agent(self._config) as agent:
             self._agent = agent
             while True:
                 try:
@@ -88,18 +91,24 @@ class CLI:
 
 @click.command()
 @click.option('--message', type=str, help='The message to send to the chat completion.')
-async def run_cli(message: str | None = None) -> None:
-    print("message:", message)
-    if message:
-        cli = CLI()
-        result = asyncio.run(cli.run_single(message))
-        if result is None:
-            print("No response from agent")
-            sys.exit(1)
-    else:
-        cli = CLI()
-        result = asyncio.run(cli._run_interactive())
-        if result is None:
-            print("No response from agent")
-            sys.exit(1)
+@click.option('--cwd', type=click.Path(exists=True, file_okay=False, path_type=Path), help='The current working directory.' , default=Path.cwd())
+async def run_cli(message: str | None = None, cwd: Path = Path.cwd()) -> None:
     
+    cli = CLI(config)
+    try:
+        config = load_config(cwd)
+    except Exception as e:
+        click.echo(f"Error loading config: {e}", err=True)
+        sys.exit(1)
+    errors = config.validate()
+    if errors:
+        for error in errors:
+            click.echo(f"Error: {error}", err=True)
+        sys.exit(1)
+    if message:
+        result = asyncio.run(cli.run_single(message))
+    else:
+        result = asyncio.run(cli._run_interactive())
+    if result is None:
+        click.echo("No response from agent", err=True)
+        sys.exit(1)
