@@ -44,7 +44,7 @@ class Agent:
             elif event.type == StreamEventType.ERROR:
                 yield AgentEvent.agent_error(event.error if event.error else 'Unknown error', {})
 
-        self._context_manager.add_assistant_message(response_text or "")
+        self._context_manager.add_assistant_message(response_text or "", tool_calls=[{"id": tool_call.call_id, "type": "function", "function": {"name": tool_call.name, "arguments": tool_call.arguments}} for tool_call in tool_calls])
         if response_text:
             yield AgentEvent.text_complete(response_text)
 

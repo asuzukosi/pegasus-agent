@@ -10,11 +10,12 @@ class ContextManager:
         self._messages: List[MessageItem] = []
         self._model_name: str | None = None
 
-    def add_user_message(self, content: str) -> None:
+    def add_user_message(self, content: str, tool_calls: List[Dict[str, Any]] | None = None) -> None:
         item = MessageItem(
             role=MessageRole.USER,
             content=content or "", 
-            token_count=count_tokens(content or "", self._model_name or "")
+            token_count=count_tokens(content or "", self._model_name or ""),
+            tool_calls=tool_calls or []
         )
         self._messages.append(item)
  
