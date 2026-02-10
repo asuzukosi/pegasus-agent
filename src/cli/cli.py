@@ -42,7 +42,7 @@ class CLI:
 
     def _get_tool_kind(self, tool_name: str) -> str | None:
         tool_kind = None
-        tool = self._agent._tool_registry.get(tool_name)
+        tool = self._agent._session._tool_registry.get(tool_name)
         if not tool:
             tool_kind = None
         tool_kind = tool.type
