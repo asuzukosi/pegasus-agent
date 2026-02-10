@@ -12,6 +12,8 @@ from rich.console import Group
 import re
 from src.utils.paths import display_path_rel_to_cwd
 from src.config.config import Config
+from src.utils.text import truncate_text
+from src.tools.data import FileDiff
 
 AGENT_THEME = Theme(
     {
@@ -70,6 +72,7 @@ class TUI:
     def _order_args(self, tool_name:str, args: dict[str, Any]) -> list[str]:
         _PREFERRED_ORDER= {
             "read_file": ["path", "offset", "limit"],
+            "write_file": ["path", "create_dirs", "content"],
         }
         preferred_order = _PREFERRED_ORDER.get(tool_name, [])
         ordered: List[Tuple[str, Any]] = []
@@ -89,6 +92,10 @@ class TUI:
         table.add_column(style='muted', justify='right', no_wrap=True)
         table.add_column(style='code', overflow='fold')
         for key, value in self._order_args(tool_name, arguments):
+            if isinstance(value, str) and key in { "content", "old_string", "new_string", "old_content", "new_content"}:
+                line_count = len(value.splitlines()) or 0
+                byte_count = len(value.encode("utf-8")) or 0
+                value = f"<{line_count} lines - {byte_count} bytes>"
             table.add_row(key, str(value))
         return table
     
@@ -166,6 +173,7 @@ class TUI:
                 error: str | None,
                 metadata: dict[str, Any],
                 truncated: bool,
+                diff: FileDiff | None,
         ) -> None:
             border_style = f"tool.{tool_kind}" if tool_kind else "tool"
             status_icon = "✅" if success else "❌"
@@ -193,6 +201,15 @@ class TUI:
                 header = " ".join(header_parts)
                 blocks.append(Text(header, style="muted"))
                 blocks.append(Syntax(code, pl, theme="monokai", line_numbers=True, start_line=start_line, word_wrap=False))
+            elif name == "write_file" and success:
+                output_line = output.strip() if output.strip() else "Completed"
+                blocks.append(Text(output_line, style="success"))
+                diff_text = diff.create_diff() if diff else ""
+                diff_display = truncate_text(diff_text, self._config.model_name, self._config.max_tool_output_tokens)
+                blocks.append(Syntax(diff_display, "diff", theme="monokai", line_numbers=True, word_wrap=False))
+                if truncated:
+                    blocks.append(Text("Output truncated", style="warning"))
+                
 
             if truncated:
                 blocks.append(Text("Output truncated", style="warning"))

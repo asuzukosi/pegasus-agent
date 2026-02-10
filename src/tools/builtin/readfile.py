@@ -26,7 +26,7 @@ class ReadFileTool(Tool):
         self._config = config
         self._max_output_tokens = config.max_tool_output_tokens
 
-    def _execute(self, invocation: ToolInvocation) -> ToolResult:
+    async def _execute(self, invocation: ToolInvocation) -> ToolResult:
         params = ReadFileParams(**invocation.params)
         path = resolve_path(invocation.cwd, params.path)
         if not path.exists():
@@ -83,7 +83,7 @@ class ReadFileTool(Tool):
             truncated = truncated,
             metadata=dict(path=path.as_posix()), total_lines=total_lines, shown_start=start_idx + 1, shown_end=end_idx)
 
-    def execute(self, invocation: ToolInvocation) -> ToolResult:
+    async def execute(self, invocation: ToolInvocation) -> ToolResult:
         try:
             return self._execute(invocation)
         except Exception as e:

@@ -60,11 +60,11 @@ class AgentEvent:
         )
     
     @classmethod
-    def tool_call_complete(cls, call_id: str, name: str, success: bool, output: str,metadata: dict[str, Any] = {}, truncated: bool = False, error: str | None=None) -> 'AgentEvent':
+    def tool_call_complete(cls, call_id: str, name: str, success: bool, output: str,metadata: dict[str, Any] = {}, truncated: bool = False, error: str | None=None, diff: FileDiff | None=None) -> 'AgentEvent':
         return cls(
             type=AgentEventType.TOOL_CALL_COMPLETE,
             data={'call_id': call_id, 'name': name, 'success': success, 'output': output,
-                   'metadata': metadata, 'truncated': truncated, 'error': error if error else None}
+                   'metadata': metadata, 'truncated': truncated, 'error': error if error else None, 'diff': diff if diff else None}
         )
     
     @classmethod
@@ -74,3 +74,11 @@ class AgentEvent:
     @classmethod
     def turn_start(cls) -> 'AgentEvent':
         return cls(type=AgentEventType.TURN_START)
+    
+    @classmethod
+    def loop_end(cls) -> 'AgentEvent':
+        return cls(type=AgentEventType.LOOP_END)
+    
+    @classmethod
+    def loop_start(cls) -> 'AgentEvent':
+        return cls(type=AgentEventType.LOOP_START)
