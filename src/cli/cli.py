@@ -13,7 +13,7 @@ class CLI:
     def __init__(self, config: Config) -> None:
         self._config = config
         self._agent | None = None
-        self._tui = TUI()
+        self._tui = TUI(self._config)
 
     async def run_single(self, message: str) -> None:
         async with Agent(self._config) as agent:
@@ -22,8 +22,8 @@ class CLI:
 
     async def _run_interactive(self) -> None:
         self._tui.print_welcome(title="Pegasus CLI", lines=[
-            f"model: mistral-7b-instruct-v0.2",
-            f"cwd: {Path.cwd()}",
+            f"model: {self._config.model_name}",
+            f"cwd: {self._config.cwd}",
             "commands: /help /config /approval /model /exit"])
         
         async with Agent(self._config) as agent:

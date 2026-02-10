@@ -2,10 +2,12 @@ from typing import List, Dict, Any
 from src.context.data import MessageItem, MessageRole, ToolResultMessage
 from src.prompts.system import get_system_prompt
 from src.utils.text import count_tokens
+from src.config.config import Config
 
 
 class ContextManager:
-    def __init__(self) -> None:
+    def __init__(self, config: Config) -> None:
+        self._config = config
         self._system_prompt = get_system_prompt()
         self._messages: List[MessageItem] = []
         self._model_name: str | None = None

@@ -1,12 +1,12 @@
 from pathlib import Path
-from typing import Dict, Any
 import jinja2
+from src.config.config import Config
 
 
 template_loader = jinja2.FileSystemLoader(searchpath="prompts")
 template_env = jinja2.Environment(loader=template_loader)
 
-def get_system_prompt() -> str:
+def get_system_prompt(config: Config) -> str:
     parts = []
 
     # identity and role
@@ -18,8 +18,16 @@ def get_system_prompt() -> str:
     # security guidelines
     parts.append(_get_security_guidelines_section())
 
+    if config.user_instructions:
+        parts.append(config.user_instructions)
+    if config.developer_instructions:
+        parts.append(config.developer_instructions)
+
+
     # operational guidelines
     parts.append(_get_operational_section())
+
+
 
     # return the combined prompt
     return "\n\n".join(parts)

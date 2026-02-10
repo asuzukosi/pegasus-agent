@@ -17,6 +17,14 @@ class AgentEventType(str, Enum):
     TOOL_CALL_START = "tool_call_start"
     TOOL_CALL_COMPLETE = "tool_call_complete"
 
+    # turn  events
+    TURN_END = "turn_end"
+    TURN_START = "turn_start"   
+
+    # loop events
+    LOOP_END = "loop_end"
+    LOOP_START = "loop_start"
+
 
 
 @dataclass
@@ -59,3 +67,10 @@ class AgentEvent:
                    'metadata': metadata, 'truncated': truncated, 'error': error if error else None}
         )
     
+    @classmethod
+    def turn_end(cls) -> 'AgentEvent':
+        return cls(type=AgentEventType.TURN_END)
+    
+    @classmethod
+    def turn_start(cls) -> 'AgentEvent':
+        return cls(type=AgentEventType.TURN_START)

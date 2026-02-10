@@ -4,9 +4,9 @@ from src.tools.base import Tool
 from src.tools.data import ToolType, ToolInvocation, ToolResult
 from src.utils.paths import resolve_path, is_binary_file
 from src.utils.text import estimate_tokens, truncate_text
+from src.config.config import Config
 
 MAX_FILE_SIZE = 1024 * 1024 * 10 # 10MB
-MAX_OUTPUT_TOKENS = 25000
 
 class ReadFileParams(BaseModel):
     path: str = Field(..., description="The path to the file to read (related to the working directory or absolute path)")
@@ -21,6 +21,10 @@ class ReadFileTool(Tool):
                         "Cannot read binary files (images, executables, etc.)"
     type: ToolType = ToolType.READ
     schema: ReadFileParams = ReadFileParams
+
+    def __init__(self, config: Config) -> None:
+        self._config = config
+        self._max_output_tokens = config.max_tool_output_tokens
 
     def _execute(self, invocation: ToolInvocation) -> ToolResult:
         params = ReadFileParams(**invocation.params)
@@ -61,8 +65,8 @@ class ReadFileTool(Tool):
         output = "\n".join(formated_lines)
         token_count = estimate_tokens(output)
 
-        if token_count > MAX_OUTPUT_TOKENS:
-           output = truncate_text(output, "gpt-4o", MAX_OUTPUT_TOKENS)
+        if token_count > self._max_output_tokens:
+           output = truncate_text(output, self._config.model_name, self._max_output_tokens)
            truncated = True
 
         metadata_lines = []

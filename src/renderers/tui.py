@@ -11,6 +11,7 @@ from rich.syntax import Syntax
 from rich.console import Group
 import re
 from src.utils.paths import display_path_rel_to_cwd
+from src.config.config import Config
 
 AGENT_THEME = Theme(
     {
@@ -47,11 +48,12 @@ def get_console() -> Console:
     return _console
 
 class TUI:
-    def __init__(self, console: Console) -> None:
+    def __init__(self, config: Config, console: Console | None = None) -> None:
         self._console = console or get_console()
+        self._config = config
         self._assistant_stream_open = False
         self._tool_arguments_by_call_id: Dict[str, Dict[str, Any]] = {}
-        self._cwd: Path | None = Path.cwd()
+        self._cwd: Path | None = config.cwd
     def _begin_assistant(self) -> None:
         self._console.print()
         self._console.print(Rule(Text("Assistant End", style="assistant")))

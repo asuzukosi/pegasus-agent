@@ -3,6 +3,7 @@ from src.tools.base import Tool
 from src.utils.logger import logger
 from src.tools.data import ToolResult, ToolInvocation
 from src.tools.builtin import get_all_builtin_tools
+from src.config.config import Config
 
 from pathlib import Path
 class ToolRegistry:
@@ -51,10 +52,10 @@ class ToolRegistry:
             return ToolResult.error_result(f"internal error while invoking tool {name}: {e}")
         
 
-def create_default_registry() -> ToolRegistry:
+def create_default_registry(config: Config) -> ToolRegistry:
     registry = ToolRegistry()
-    BUILTIN_TOOLS: List[Type[Tool]] = get_all_builtin_tools()
+    BUILTIN_TOOLS: List[Type[Tool]] = get_all_builtin_tools(config)
     for tool in BUILTIN_TOOLS:
-        registry.register(tool())
+        registry.register(tool(config))
     return registry
     
