@@ -57,7 +57,7 @@ class Agent:
                 yield AgentEvent.tool_call_start(tool_call.call_id, tool_call.name, tool_call.arguments)
                 result = await self._session._tool_registry.invoke(tool_call.name, tool_call.arguments, self._config.cwd)
                 tool_results.append(ToolResultMessage(tool_call_id=tool_call.call_id, content=result.to_model_output(), is_error=not result.success))
-                yield AgentEvent.tool_call_complete(tool_call.call_id, tool_call.name, result.success, result.output, result.metadata, result.truncated, result.error)
+                yield AgentEvent.tool_call_complete(tool_call.call_id, tool_call.name, result.success, result.output, result.metadata, result.truncated, result.error, result.diff)
             
             for tool_result in tool_results:
                 self._session._context_manager.add_tool_result(tool_result)

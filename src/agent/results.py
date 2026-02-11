@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List
+from src.tools.data import FileDiff
 from src.client.response import TokenUsage
 
 class AgentEventType(str, Enum):
@@ -60,11 +61,11 @@ class AgentEvent:
         )
     
     @classmethod
-    def tool_call_complete(cls, call_id: str, name: str, success: bool, output: str,metadata: dict[str, Any] = {}, truncated: bool = False, error: str | None=None, diff: FileDiff | None=None) -> 'AgentEvent':
+    def tool_call_complete(cls, call_id: str, name: str, success: bool, output: str,metadata: dict[str, Any] = {}, truncated: bool = False, error: str | None=None, diff: FileDiff | None=None, exit_code: int | None=None) -> 'AgentEvent':
         return cls(
             type=AgentEventType.TOOL_CALL_COMPLETE,
             data={'call_id': call_id, 'name': name, 'success': success, 'output': output,
-                   'metadata': metadata, 'truncated': truncated, 'error': error if error else None, 'diff': diff if diff else None}
+                   'metadata': metadata, 'truncated': truncated, 'error': error if error else None, 'diff': diff if diff else None, 'exit_code': exit_code if exit_code else None}
         )
     
     @classmethod

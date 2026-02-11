@@ -86,8 +86,9 @@ class CLI:
                 truncated = event.data.get("truncated", False)
                 error = event.data.get("error", None)
                 diff = event.data.get("diff", None)
+                exit_code = event.data.get("exit_code", None)
                 self._tui.tool_call_complete(call_id, tool_name, tool_kind, success, 
-                                             output, error, metadata, truncated, diff)
+                                             output, error, metadata, truncated, diff, exit_code)
         return final_response
 
 @click.command()

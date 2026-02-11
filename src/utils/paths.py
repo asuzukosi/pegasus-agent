@@ -7,10 +7,10 @@ def resolve_path(base: str | Path, path: str | Path) -> Path:
         return path.resolve()
     return Path(base).resolve() / path
 
-def ensure_parent_directory(path: str | Path) -> None:
-    path = Path(path)
+def ensure_parent_directory(path: str | Path) -> Path:
+    path: Path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    return path
+    return path.resolve()
 
 def display_path_rel_to_cwd(path: str, cwd: Path| None) -> str:
     try:

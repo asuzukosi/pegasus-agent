@@ -44,6 +44,7 @@ class ToolInvocation:
 class ToolResult:
     success: bool
     output: str
+    exit_code: int | None = None
     error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     truncated: bool = False

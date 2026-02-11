@@ -56,6 +56,7 @@ class TUI:
         self._assistant_stream_open = False
         self._tool_arguments_by_call_id: Dict[str, Dict[str, Any]] = {}
         self._cwd: Path | None = config.cwd
+
     def _begin_assistant(self) -> None:
         self._console.print()
         self._console.print(Rule(Text("Assistant End", style="assistant")))
@@ -73,6 +74,8 @@ class TUI:
         _PREFERRED_ORDER= {
             "read_file": ["path", "offset", "limit"],
             "write_file": ["path", "create_dirs", "content"],
+            "edit_file": ["path", "replace_all", "old_string", "new_string"],
+            "shell": ["command", "timeout", "cwd"],
         }
         preferred_order = _PREFERRED_ORDER.get(tool_name, [])
         ordered: List[Tuple[str, Any]] = []
@@ -174,10 +177,13 @@ class TUI:
                 metadata: dict[str, Any],
                 truncated: bool,
                 diff: FileDiff | None,
+                exit_code: int | None,
         ) -> None:
             border_style = f"tool.{tool_kind}" if tool_kind else "tool"
             status_icon = "✅" if success else "❌"
             status_style = "success" if success else "error"
+
+            args = self._tool_arguments_by_call_id.get(call_id, {})
 
             title = Text.assemble((f"{status_icon}", status_style), (name, "tool"), (" ", "muted"), )(f"#{call_id[:8]}", "muted")
             primary_path = None
@@ -201,7 +207,7 @@ class TUI:
                 header = " ".join(header_parts)
                 blocks.append(Text(header, style="muted"))
                 blocks.append(Syntax(code, pl, theme="monokai", line_numbers=True, start_line=start_line, word_wrap=False))
-            elif name == "write_file" and success:
+            elif name in ["write_file", "edit_file"] and success:
                 output_line = output.strip() if output.strip() else "Completed"
                 blocks.append(Text(output_line, style="success"))
                 diff_text = diff.create_diff() if diff else ""
@@ -209,7 +215,15 @@ class TUI:
                 blocks.append(Syntax(diff_display, "diff", theme="monokai", line_numbers=True, word_wrap=False))
                 if truncated:
                     blocks.append(Text("Output truncated", style="warning"))
-                
+            elif name == "shell":
+                command = args.get("command")
+                if isinstance(command, str) and command.strip():
+                    blocks.append(Text(f"${command}", style="muted"))
+                if exit_code is not None:
+                    blocks.append(Text(f"exit code: {exit_code}", style="muted"))
+
+                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
 
             if truncated:
                 blocks.append(Text("Output truncated", style="warning"))
