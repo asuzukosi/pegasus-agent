@@ -76,6 +76,7 @@ class TUI:
             "write_file": ["path", "create_dirs", "content"],
             "edit_file": ["path", "replace_all", "old_string", "new_string"],
             "shell": ["command", "timeout", "cwd"],
+            "list_dir": ["path", "include_hidden"],
         }
         preferred_order = _PREFERRED_ORDER.get(tool_name, [])
         ordered: List[Tuple[str, Any]] = []
@@ -99,6 +100,8 @@ class TUI:
                 line_count = len(value.splitlines()) or 0
                 byte_count = len(value.encode("utf-8")) or 0
                 value = f"<{line_count} lines - {byte_count} bytes>"
+            if isinstance(value, bool):
+                value = "true" if value else "false"
             table.add_row(key, str(value))
         return table
     
@@ -224,6 +227,21 @@ class TUI:
 
                 output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
                 blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+            
+            elif name == "list_dir":
+                entries = metadata.get("entries")
+                path = metadata.get("path")
+                summary = []
+                if isinstance(path, str):
+                    summary.append(path)
+                if isinstance(entries, int):
+                    summary.append(f"{entries} entries")
+                if summary:
+                    blocks.append(Text(" ".join(summary), style="muted"))
+                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+                if truncated:
+                    blocks.append(Text("Output truncated", style="warning"))
 
             if truncated:
                 blocks.append(Text("Output truncated", style="warning"))

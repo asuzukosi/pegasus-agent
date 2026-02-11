@@ -3,6 +3,7 @@ from src.tools.builtin.writefile import WriteFileTool
 from src.tools.builtin.editfile import EditFileTool 
 # from src.tools.builtin.patchfile import PatchFileTool
 from src.tools.builtin.shell import ShellTool
+from src.tools.builtin.listdir import ListDirTool
 
 from typing import List
 from src.tools.base import Tool
@@ -12,6 +13,7 @@ __all__ = [
     "WriteFileTool",
     "EditFileTool",
     "ShellTool",
+    "ListDirTool",
 ]
 
 def get_all_builtin_tools(config: Config) -> List[Tool]:
@@ -20,4 +22,5 @@ def get_all_builtin_tools(config: Config) -> List[Tool]:
         WriteFileTool(config),
         EditFileTool(config),
         ShellTool(config),
+        ListDirTool(config),
     ]
