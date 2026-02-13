@@ -7,3 +7,5 @@ rich
 tiktoken
 platformdirs
 tomli
+duckduckgo-search
+ddgs

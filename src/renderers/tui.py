@@ -259,6 +259,45 @@ class TUI:
                 if truncated:
                     blocks.append(Text("Output truncated", style="warning"))
 
+            elif name == "websearch" and success:
+                results = metadata.get("results")
+                query = metadata.get("query")
+                summary = []
+
+                if isinstance(query, list):
+                    summary.append(f"Search results for '{query}'")
+
+                if isinstance(results, list):
+                    summary.append(f"Total results: {len(results)}")
+                if isinstance(results, int):
+                    summary.append(f"{results} results")
+
+                if summary:
+                    blocks.append(Text(".".join(summary), style="muted"))
+                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+                if truncated:
+                    blocks.append(Text("Output truncated", style="warning"))
+
+            elif name == "webfetch" and success:
+                status_code = metadata.get("status_code")
+                content_length = metadata.get("content_length")
+                url = metadata.get("url")
+                summary = []
+                if isinstance(status_code, int):
+                    summary.append(f"Status code: {status_code}")
+                if isinstance(content_length, int):
+                    summary.append(f"Content length: {content_length}")
+                if isinstance(url, str):
+                    summary.append(f"URL: {url}")
+                
+                if summary:
+                    blocks.append(Text(".".join(summary), style="muted"))
+                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+                if truncated:
+                    blocks.append(Text("Output truncated", style="warning"))
+                
             if error and not success:
                 blocks.append(Text(error, style="error"))
                 output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
