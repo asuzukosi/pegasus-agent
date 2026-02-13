@@ -240,6 +240,15 @@ class TUI:
                     blocks.append(Text(" ".join(summary), style="muted"))
                 output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
                 blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+
+                if error and not success:
+                    blocks.append(Text(error, style="error"))
+                    output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+                    if output_display.strip():
+                        blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+                    else:
+                        blocks.append(Text("No output", style="error"))
+
                 if truncated:
                     blocks.append(Text("Output truncated", style="warning"))
 
