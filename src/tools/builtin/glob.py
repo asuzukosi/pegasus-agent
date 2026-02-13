@@ -29,6 +29,8 @@ class GlobTool(Tool):
         try:
             matches = search_path.glob(params.pattern)
             matches = [match for match in matches if match.is_file()]
+            matches = [match for match in matches if not match.as_posix().startswith(".") and not match.as_posix() in {".git", ".svn", ".hg", ".bzr", ".venv", ".pytest_cache", ".ruff_cache", ".mypy_cache", ".vscode", ".idea", ".DS_Store", "node_modules"}] 
+            matches = [match for match in matches if not ".venv" in match.as_posix() and not "node_modules" in match.as_posix()]
         except Exception as e:
             return ToolResult.error_result(f"Error globbing files with error: {e}")
         
