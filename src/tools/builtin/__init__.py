@@ -4,6 +4,7 @@ from src.tools.builtin.editfile import EditFileTool
 # from src.tools.builtin.patchfile import PatchFileTool
 from src.tools.builtin.shell import ShellTool
 from src.tools.builtin.listdir import ListDirTool
+from src.tools.builtin.grep import GrepTool
 
 from typing import List
 from src.tools.base import Tool
@@ -14,6 +15,7 @@ __all__ = [
     "EditFileTool",
     "ShellTool",
     "ListDirTool",
+    "GrepTool",
 ]
 
 def get_all_builtin_tools(config: Config) -> List[Tool]:
@@ -23,4 +25,5 @@ def get_all_builtin_tools(config: Config) -> List[Tool]:
         EditFileTool(config),
         ShellTool(config),
         ListDirTool(config),
+        GrepTool(config),
     ]

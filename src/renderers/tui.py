@@ -77,6 +77,8 @@ class TUI:
             "edit_file": ["path", "replace_all", "old_string", "new_string"],
             "shell": ["command", "timeout", "cwd"],
             "list_dir": ["path", "include_hidden"],
+            "grep": ["path", "pattern", "case_sensitive"],
+            "glob": ["path", "pattern"],
         }
         preferred_order = _PREFERRED_ORDER.get(tool_name, [])
         ordered: List[Tuple[str, Any]] = []
@@ -228,7 +230,7 @@ class TUI:
                 output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
                 blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
             
-            elif name == "list_dir":
+            elif name == "list_dir" and success:
                 entries = metadata.get("entries")
                 path = metadata.get("path")
                 summary = []
@@ -240,23 +242,36 @@ class TUI:
                     blocks.append(Text(" ".join(summary), style="muted"))
                 output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
                 blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-
-                if error and not success:
-                    blocks.append(Text(error, style="error"))
-                    output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                    if output_display.strip():
-                        blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-                    else:
-                        blocks.append(Text("No output", style="error"))
-
                 if truncated:
                     blocks.append(Text("Output truncated", style="warning"))
 
+            elif name == "grep" and success:
+                path = metadata.get("path")
+                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
             if truncated:
                 blocks.append(Text("Output truncated", style="warning"))
+
+            elif name == "glob" and success:
+                path = metadata.get("path")
+                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+                if truncated:
+                    blocks.append(Text("Output truncated", style="warning"))
+
+            if error and not success:
+                blocks.append(Text(error, style="error"))
+                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+                if output_display.strip():
+                    blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+                else:
+                    blocks.append(Text("No output", style="error"))
+            
             panel = Panel(Group(*blocks), title=title, title_align="left", subtitle=Text('completed' if success else 'failed', style="muted"), subtitle_align="right", box=box.ROUNDED, padding=(1, 2), border_style=border_style)
             self._console.print()
             self._console.print(panel)
+
+
 
     def print_welcome(self, title:str, lines: List[str]) -> None:
         body = "\n".join(lines)
