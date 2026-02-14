@@ -8,7 +8,8 @@ from src.tools.builtin.grep import GrepTool
 from src.tools.builtin.glob import GlobTool
 from src.tools.builtin.websearch import WebSearchTool
 from src.tools.builtin.webfetch import WebFetchTool
-
+from src.tools.builtin.todos import TodosTool
+from src.tools.builtin.memory import MemoryTool
 from typing import List
 from src.tools.base import Tool
 from src.config.config import Config
@@ -22,6 +23,8 @@ __all__ = [
     "GlobTool",
     "WebSearchTool",
     "WebFetchTool",
+    "MemoryTool",
+    "TodosTool",
 ]
 
 def get_all_builtin_tools(config: Config) -> List[Tool]:
@@ -35,4 +38,6 @@ def get_all_builtin_tools(config: Config) -> List[Tool]:
         GlobTool(config),
         WebSearchTool(config),
         WebFetchTool(config),
+        MemoryTool(config),
+        TodosTool(config),
     ]

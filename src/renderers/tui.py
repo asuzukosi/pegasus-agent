@@ -302,6 +302,12 @@ class TUI:
                 output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
                 blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
                 
+            elif name == "memory" and success:
+                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+                if truncated:
+                    blocks.append(Text("Output truncated", style="warning"))
+                    
             if error and not success:
                 blocks.append(Text(error, style="error"))
                 output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
