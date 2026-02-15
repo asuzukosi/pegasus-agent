@@ -32,8 +32,6 @@ def get_system_prompt(config: Config) -> str:
     # TODO: add token optimization tracking for the memory system so the llm is not clogged with information
     parts.append(_get_memory_section(config))
 
-
-
     # return the combined prompt
     return "\n\n".join(parts)
 
@@ -54,6 +52,15 @@ def _get_agents_section(config: Config) -> str:
     """
     config
     template = template_env.get_template("agents.j2")
+    return template.render()
+
+def _get_shell_info(config: Config) -> str:
+    """
+    retreives the shell information section of the prompt.
+    this determines the shell environment of the agent and how it should be used.
+    """
+    # TODO: calculate the shell info based on the current operating system here
+    template = template_env.get_template("shell_info.j2")
     return template.render()
 
 def _get_security_guidelines_section(config: Config) -> str:
