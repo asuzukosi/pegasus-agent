@@ -11,6 +11,7 @@ class ToolType(str, Enum):
     NETWORK = "network"
     MEMORY = "memory"
     MCP = "mcp"
+    SUB_AGENT = "sub_agent"
 
 @dataclass
 class FileDiff:

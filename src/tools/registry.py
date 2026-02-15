@@ -2,17 +2,22 @@ from typing import Dict, List, Any, Type
 from src.tools.base import Tool
 from src.utils.logger import logger
 from src.tools.data import ToolResult, ToolInvocation
-from src.tools.builtin import get_all_builtin_tools
+from src.tools.builtin import get_all_builtin_tools, get_default_sub_agent_definitions, SubAgentTool
 from src.config.config import Config
 
 from pathlib import Path
 class ToolRegistry:
-    def __init__(self):
+    def __init__(self, config: Config):
         self._tools: Dict[str, Tool] = {}
+        self._config = config
 
     def register(self, tool: Tool) -> None:
         if tool.name is self._tools:
             logger.warning(f"Tool {tool.name} already registered. Overwriting...")
+        # TODO: this would be problematic for sub agents
+        if self._config.allowed_tools and tool.name not in self._config.allowed_tools:
+            logger.warning(f"Tool {tool.name} not in allowed tools list. Skipping...")
+            return
         self._tools[tool.name] = tool
         logger.debug(f"Tool {tool.name} registered successfully")
 
@@ -53,9 +58,13 @@ class ToolRegistry:
         
 
 def create_default_registry(config: Config) -> ToolRegistry:
-    registry = ToolRegistry()
+    registry = ToolRegistry(config)
     BUILTIN_TOOLS: List[Type[Tool]] = get_all_builtin_tools(config)
     for tool in BUILTIN_TOOLS:
         registry.register(tool(config))
+
+    for sub_agent_definition in get_default_sub_agent_definitions(config):
+        registry.register(SubAgentTool(config, sub_agent_definition.name, 
+                                       sub_agent_definition.description, sub_agent_definition.goal_prompt, sub_agent_definition.allowed_tools, sub_agent_definition.max_turns, sub_agent_definition.timeout))
     return registry
     

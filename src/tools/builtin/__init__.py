@@ -9,10 +9,11 @@ from src.tools.builtin.glob import GlobTool
 from src.tools.builtin.websearch import WebSearchTool
 from src.tools.builtin.webfetch import WebFetchTool
 from src.tools.builtin.todos import TodosTool
-from src.tools.builtin.memory import MemoryTool
+from src.tools.builtin.memory import MemoryTool # TODO: explore other types of memory architectures
 from typing import List
 from src.tools.base import Tool
 from src.config.config import Config
+from src.tools.subagents import SubAgentTool, CODE_REVIEWER, CODE_INVESTIGATOR, SubAgentDefinition
 __all__ = [
     "ReadFileTool",
     "WriteFileTool",
@@ -40,4 +41,10 @@ def get_all_builtin_tools(config: Config) -> List[Tool]:
         WebFetchTool(config),
         MemoryTool(config),
         TodosTool(config),
+    ]
+
+def get_default_sub_agent_definitions(config: Config) -> List[SubAgentDefinition]:
+    return [
+        CODE_REVIEWER,
+        CODE_INVESTIGATOR,
     ]

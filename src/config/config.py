@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Any
 from pathlib import Path
 import os
 
@@ -25,6 +25,11 @@ class Config(BaseModel):
     developer_instructions: str | None = None
     user_instructions: str | None = None
     debug: bool = False
+    allowed_tools: list[str] | None = None
+    timeout: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.model_dump(mode="json")
 
     @property
     def api_key(self) -> str:
