@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from src.tools.discovery import ToolDiscoveryManager
 from src.tools.mcp.manager import MCPManager
-
+from src.context.compaction import ChatCompressor
 class Session:
     def __init__(self, config: Config) -> None:
         self.session_id = str(uuid.uuid4())
@@ -16,6 +16,7 @@ class Session:
         self._tool_registry: ToolRegistry = create_default_registry(self._config)
         self._tool_discovery_manager = ToolDiscoveryManager(self._config, self._tool_registry)
         self._mcp_manager = MCPManager(self._config)
+        self._chat_compressor = ChatCompressor(self._client)
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
         self._turn_count = 0

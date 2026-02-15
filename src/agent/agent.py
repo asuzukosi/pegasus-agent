@@ -1,7 +1,7 @@
 from typing import AsyncGenerator
 from typing import List
 from src.agent.results import AgentEvent, AgentEventType
-from src.client.response import StreamEventType, ToolCall
+from src.client.response import StreamEventType, ToolCall, TokenUsage
 from src.context.data import ToolResultMessage
 from src.session.session import Session
 from src.config.config import Config
@@ -29,6 +29,14 @@ class Agent:
             response_text = ''
             messages = self._session._context_manager.get_messages()
             tool_calls: List[ToolCall] = []
+            usage: TokenUsage | None = None
+
+            if self._session._context_manager.needs_compression():
+                summary, usage = await self._session._chat_compressor.compress(self._session._context_manager)
+                if summary:
+                    self._session._context_manager.set_latest_usage(usage)
+                    self._session._context_manager.add_usage(usage)
+                    self._session._context_manager.replace_with_compressed_summary(summary)
 
             async for event in self._session._client.chat_completion(messages=messages, stream=True):
                 if event.type == StreamEventType.TEXT_DELTA:
@@ -42,12 +50,18 @@ class Agent:
                         tool_calls.append(event.tool_call)
                 elif event.type == StreamEventType.ERROR:
                     yield AgentEvent.agent_error(event.error if event.error else 'Unknown error', {})
-
+                
+                if event.type == StreamEventType.MESSAGE_COMPLETE:
+                    usage = event.usage
             self._session._context_manager.add_assistant_message(response_text or "", tool_calls=[{"id": tool_call.call_id, "type": "function", "function": {"name": tool_call.name, "arguments": tool_call.arguments}} for tool_call in tool_calls])
             if response_text:
                 yield AgentEvent.text_complete(response_text)
             
             if not tool_calls:
+                if usage:
+                    self._session._context_manager.set_latest_usage(usage)
+                    self._session._context_manager.add_usage(usage)
+                self._session._context_manager.prune_tool_outputs()
                 yield AgentEvent.turn_end()
                 yield AgentEvent.loop_end()
                 return
@@ -61,6 +75,12 @@ class Agent:
             
             for tool_result in tool_results:
                 self._session._context_manager.add_tool_result(tool_result)
+
+            if usage:
+                self._session._context_manager.set_latest_usage(usage)
+                self._session._context_manager.add_usage(usage)
+            
+            self._session._context_manager.prune_tool_outputs()
         
             yield AgentEvent.turn_end()
         yield AgentEvent.loop_end()

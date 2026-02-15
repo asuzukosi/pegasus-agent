@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any
-
+from datetime import datetime
 
 class MessageRole(str, Enum):
     USER = "user"
@@ -16,6 +16,7 @@ class MessageItem:
     tool_call_id: str | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     token_count: int | None = None
+    pruned_at: datetime | None = None
 
     def to_dict(self) -> Dict[str, Any]:
         result: Dict[str, Any] = {"role": self.role.value}
