@@ -44,6 +44,7 @@ def get_all_builtin_tools(config: Config) -> List[Tool]:
     ]
 
 def get_default_sub_agent_definitions(config: Config) -> List[SubAgentDefinition]:
+    config
     return [
         CODE_REVIEWER,
         CODE_INVESTIGATOR,
