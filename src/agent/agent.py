@@ -9,7 +9,7 @@ from src.config.config import Config
 class Agent:
     def __init__(self, config: Config) -> None:
         self._config = config
-        self._session: Session | None = Session(self._config)
+        self._session: Session | None = None
 
 
     async def run(self, message: str):
@@ -65,9 +65,15 @@ class Agent:
             yield AgentEvent.turn_end()
         yield AgentEvent.loop_end()
     async def __aenter__(self) -> 'Agent':
+        # initialize session if not already initialized
+        if self._session is None:
+            self._session = Session(self._config)
+            await self._session.initialize()
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
         if self._session._client is not None:
             await self._session._client.close()
+            if self._session._mcp_manager is not None:
+                await self._session._mcp_manager.shutdown()
             self._session = None

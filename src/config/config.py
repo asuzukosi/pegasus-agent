@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import List, Any
+from pydantic import BaseModel, Field, model_validator
+from typing import List, Any, Dict
 from pathlib import Path
 import os
 
@@ -15,6 +15,30 @@ class ShellEnvironmentPolicy(BaseModel):
     exclude_patterns: List[str] = Field(default_factory=lambda: ["*KEY*", "*TOKEN*", "*SECRET*"])
     set_vars: dict[str, str] = Field(default_factory=dict)
 
+class MCPServerConfig(BaseModel):
+    enabled: bool = True
+    startup_timeout_sec: float = 10.0
+
+    # stdout transport
+    command: str = Field(default="")
+    args: List[str] = Field(default_factory=list)
+    env: dict[str, str] = Field(default_factory=dict)
+    cwd: Path | None = None
+
+    # http/sse transport
+    url: str | None = None
+
+    @model_validator(mode="after")
+    def validate_transport(self) -> 'MCPServerConfig':
+        has_command = bool(self.command)
+        has_url = bool(self.url)
+        if not has_command and not has_url:
+            raise ValueError("Either command or url must be provided")
+        if has_command and has_url:
+            raise ValueError("Only one of command or url must be provided")
+        if has_command and not self.cwd:
+            raise ValueError("cwd must be provided when command is provided")
+        return self
 
 class Config(BaseModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
@@ -27,6 +51,7 @@ class Config(BaseModel):
     debug: bool = False
     allowed_tools: list[str] | None = None
     timeout: int | None = None
+    mcp_servers: Dict[str, MCPServerConfig] = Field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump(mode="json")

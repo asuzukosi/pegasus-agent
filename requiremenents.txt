@@ -9,3 +9,4 @@ platformdirs
 tomli
 duckduckgo-search
 ddgs
+fastmcp

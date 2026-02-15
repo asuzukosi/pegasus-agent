@@ -9,6 +9,7 @@ from pathlib import Path
 class ToolRegistry:
     def __init__(self, config: Config):
         self._tools: Dict[str, Tool] = {}
+        self._mcp_tools: Dict[str, Tool] = {}
         self._config = config
 
     def register(self, tool: Tool) -> None:
@@ -20,6 +21,11 @@ class ToolRegistry:
             return
         self._tools[tool.name] = tool
         logger.debug(f"Tool {tool.name} registered successfully")
+
+    def register_mcp_tool(self, tool: Tool) -> None:
+        self._mcp_tools[tool.name] = tool
+        logger.debug(f"MCP tool {tool.name} registered successfully")
+
 
     def unregister(self, tool_name: str) -> bool:
         if tool_name not in self._tools:
@@ -36,10 +42,12 @@ class ToolRegistry:
     def get(self, tool_name: str) -> Tool | None:
         if tool_name not in self._tools:
             return self._tools[tool_name]
+        if tool_name not in self._mcp_tools:
+            return self._mcp_tools[tool_name]
         return None
     
     def get_all(self) -> List[Tool]:
-        return list(self._tools.values())
+        return list(self._tools.values()) + list(self._mcp_tools.values())
     
     async def invoke(self, name: str, params: Dict[str, Any], cwd: Path) -> ToolResult:
         tool: Tool | None = self.get(name)
