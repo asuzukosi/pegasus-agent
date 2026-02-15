@@ -79,6 +79,8 @@ class TUI:
             "list_dir": ["path", "include_hidden"],
             "grep": ["path", "pattern", "case_sensitive"],
             "glob": ["path", "pattern"],
+            "memory": ["action", "key", "value"],
+            "todos": ["action", "id", "content"],
         }
         preferred_order = _PREFERRED_ORDER.get(tool_name, [])
         ordered: List[Tuple[str, Any]] = []
@@ -302,7 +304,7 @@ class TUI:
                 output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
                 blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
                 
-            elif name == "memory" and success:
+            elif name == "memory" and success: # TODO: redo the representation of the memory as shown in the tui
                 output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
                 blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
                 if truncated:
