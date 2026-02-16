@@ -4,7 +4,7 @@ from src.utils.logger import logger
 from src.tools.data import ToolResult, ToolInvocation
 from src.tools.builtin import get_all_builtin_tools, get_default_sub_agent_definitions, SubAgentTool
 from src.config.config import Config
-from src.security.approvals import ApprovalManager
+from src.security.approvals import ApprovalManager, ApprovalContext, ApprovalDecision
 from pathlib import Path
 
 
@@ -61,7 +61,27 @@ class ToolRegistry:
             return ToolResult.error_result(f"Validation errors: {'; '.join(validation_errors)}", metadata=dict(tool_name=name, validation_errors=validation_errors))
         tool_invocation = ToolInvocation(cwd=cwd, params=params)
         if approval_manager:
-            tool.get_confirmation(tool_invocation)
+            confirmation  = await tool.get_confirmation(tool_invocation)
+            if confirmation:
+                context = ApprovalContext(
+                    tool_name=name,
+                    params=params,
+                    is_mutating=tool.is_mutating(params),
+                    affected_paths=[],
+                    command=None,
+                    is_dangerous=confirmation.is_dangerous
+                )
+                decision = await approval_manager.check_approval(context)
+                if decision == ApprovalDecision.REJECTED:
+                    return ToolResult.error_result(f"Approval rejected: {confirmation.description}")
+                elif decision == ApprovalDecision.NEEDS_CONFIRMATION:
+                    approved = await approval_manager.request_confirmation(confirmation)
+                    if not approved:
+                        return ToolResult.error_result(f"Approval not granted: {confirmation.description}")
+                elif decision == ApprovalDecision.APPROVED:
+                    pass
+                else:
+                    return ToolResult.error_result(f"Unknown approval decision: {decision}")
         try:
             result = await tool.execute(tool_invocation)
             return result

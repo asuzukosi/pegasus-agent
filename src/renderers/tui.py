@@ -7,13 +7,14 @@ from rich.table import Table
 from rich import box
 from rich.panel import Panel
 from pathlib import Path
+from rich.prompt import Prompt
 from rich.syntax import Syntax
 from rich.console import Group
 import re
 from src.utils.paths import display_path_rel_to_cwd
 from src.config.config import Config
 from src.utils.text import truncate_text
-from src.tools.data import FileDiff
+from src.tools.data import FileDiff, ToolConfirmation
 
 AGENT_THEME = Theme(
     {
@@ -321,6 +322,34 @@ class TUI:
             panel = Panel(Group(*blocks), title=title, title_align="left", subtitle=Text('completed' if success else 'failed', style="muted"), subtitle_align="right", box=box.ROUNDED, padding=(1, 2), border_style=border_style)
             self._console.print()
             self._console.print(panel)
+
+    def handle_confirmation(self, confirmation: ToolConfirmation) -> None:
+        output = [
+            Text(confirmation.tool_name, style="tool"),
+            Text(confirmation.description, style="code"),
+        ]
+        if confirmation.command:
+            output.append(Text(f'$ {confirmation.command}', style="warning"))
+        if confirmation.diff:
+            diff_text = confirmation.diff.to_diff()
+            output.append(Syntax(diff_text, "diff", theme="monokai", line_numbers=True, word_wrap=False))
+        
+        self._console.print()
+        self._console.print(
+            Panel(
+                Group(*output),
+                title=Text("Confirmation Required", style="warning"),
+                title_align="left",
+                box=box.ROUNDED,
+                padding=(1, 2),
+                border_style="warning",
+            )
+        )
+        response = Prompt.ask("Do you approve this action? (y/n)", choices=["y", "n"])
+        if response == "y":
+            return True
+        else:
+            return False    
 
 
 
