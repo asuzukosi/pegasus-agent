@@ -49,10 +49,36 @@ class ApprovalPolicy(str, Enum):
     NEVER = "never"
     YOLO = "yolo"
 
+class HookTrigger(str, Enum):
+    BEFORE_AGENT = "before_agent"
+    AFTER_AGENT = "after_agent"
+    BEFORE_TOOL = "before_tool"
+    AFTER_TOOL = "after_tool"
+    ON_ERROR = "on_error"
+
+
+class HookConfig(BaseModel):
+    name: str
+    trigger: HookTrigger
+    command: str
+    script: str | None = None
+    timeout_sec: float = 30
+    enabled: bool = True
+
+    @model_validator(mode='after')
+    def validate_hook(self) -> 'HookConfig':
+        if not self.command and not self.script:
+            raise ValueError("Either command or script must be provided")
+        if self.command and self.script:
+            raise ValueError("Only one of command or script must be provided")
+        return self
+
 class Config(BaseModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
     cwd: Path = Field(default_factory=Path.cwd)
     shell_environment: ShellEnvironmentPolicy = Field(default_factory=ShellEnvironmentPolicy)
+    hooks_enabled: bool = False
+    hooks: List[HookConfig] = Field(default_factory=list)
     approval: ApprovalPolicy = ApprovalPolicy.ON_REQUEST
     max_turns: int = 100
     max_tool_output_tokens: int = 50_000

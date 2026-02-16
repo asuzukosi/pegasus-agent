@@ -16,12 +16,14 @@ class Agent:
 
 
     async def run(self, message: str):
+        self._session._hooks_system.trigger_before_agent(message)
         yield AgentEvent.agent_start(message)
         self._session._context_manager.add_user_message(message)
         async for event in self._agentic_loop():
             yield event
             if event.type == AgentEventType.TEXT_COMPLETE:
                 final_response = event.data['content']
+        self._session._hooks_system.trigger_after_agent(final_response)
         yield AgentEvent.agent_end(final_response)
 
     async def _agentic_loop(self) -> AsyncGenerator[AgentEvent, None]:
@@ -58,6 +60,7 @@ class Agent:
                     usage = event.usage
             self._session._context_manager.add_assistant_message(response_text or "", tool_calls=[{"id": tool_call.call_id, "type": "function", "function": {"name": tool_call.name, "arguments": tool_call.arguments}} for tool_call in tool_calls])
             if response_text:
+                self._session._loop_detector.record_action("response", text=response_text)
                 yield AgentEvent.text_complete(response_text)
             
             if not tool_calls:
@@ -71,9 +74,17 @@ class Agent:
 
             tool_results: List[ToolResultMessage] = []
             for tool_call in tool_calls:
+                self._session._hooks_system.trigger_before_tool(tool_call.name, tool_call.arguments)
+                self._session._loop_detector.record_action("tool_call", tool_name=tool_call.name, args=tool_call.arguments)
+                loop_detected = self._session._loop_detector.check_for_loop()
+                if loop_detected:
+                    # TODO: handle detected loop with prompt
+                    yield AgentEvent.agent_error(f"Loop detected: {loop_detected}", {})
+                    return
                 yield AgentEvent.tool_call_start(tool_call.call_id, tool_call.name, tool_call.arguments)
                 result = await self._session._tool_registry.invoke(tool_call.name, tool_call.arguments, self._config.cwd)
                 tool_results.append(ToolResultMessage(tool_call_id=tool_call.call_id, content=result.to_model_output(), is_error=not result.success))
+                self._session._hooks_system.trigger_after_tool(tool_call.name, tool_call.arguments)
                 yield AgentEvent.tool_call_complete(tool_call.call_id, tool_call.name, result.success, result.output, result.metadata, result.truncated, result.error, result.diff)
             
             for tool_result in tool_results:

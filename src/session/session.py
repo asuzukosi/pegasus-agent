@@ -10,6 +10,8 @@ from src.context.compaction import ChatCompressor
 from src.security.approvals import ApprovalManager
 from src.tools.data import ToolConfirmation
 from typing import Callable, Awaitable
+from src.hooks.hooks_system import HookSystem
+from src.context.loop_detector import LoopDetector
 
 class Session:
     def __init__(self, config: Config, confirmation_callback: Callable[[ToolConfirmation], Awaitable[bool]] | None = None) -> None:
@@ -22,6 +24,8 @@ class Session:
         self._mcp_manager = MCPManager(self._config)
         self._chat_compressor = ChatCompressor(self._client)
         self._approval_manager = ApprovalManager(self._config, confirmation_callback)
+        self._hooks_system = HookSystem(self._config)
+        self._loop_detector = LoopDetector()
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
         self._turn_count = 0
