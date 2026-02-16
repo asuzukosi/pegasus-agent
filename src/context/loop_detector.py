@@ -38,3 +38,6 @@ class LoopDetector:
                 if recent[:cycle_len] == recent[cycle_len:]:
                     return f"loop detected: {recent[:cycle_len]}"
         return None
+
+    def clear(self) -> None:
+        self._history.clear()

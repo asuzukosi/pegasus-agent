@@ -101,4 +101,8 @@ class ContextManager:
 
         return pruned_count
 
+    def clear(self) -> None:
+        self._messages = []
+        self._latest_usage = TokenUsage()
+        self._total_usage = TokenUsage()
 

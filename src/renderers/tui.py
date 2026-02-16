@@ -351,6 +351,15 @@ class TUI:
         else:
             return False    
 
+    def print_help(self) -> None:
+        self._console.print(Panel(Text("Help", style="highlight"), title="Help", title_align="left", box=box.ROUNDED, padding=(1, 2), border_style="border"))
+        self._console.print(Text("Commands:", style="muted"))
+        self._console.print(Text("  /help - Show this help message", style="muted"))
+        self._console.print(Text("  /exit - Exit the program", style="muted"))
+        self._console.print(Text("  /quit - Exit the program", style="muted"))
+        self._console.print(Text("  /config - Show the current configuration", style="muted"))
+        self._console.print(Text("  /model - Show the current model", style="muted"))
+        self._console.print(Text("  /approval - Show the current approval status", style="muted"))
 
 
     def print_welcome(self, title:str, lines: List[str]) -> None:
@@ -365,3 +374,10 @@ class TUI:
                 padding=(1, 2),
             )
         )
+
+    def print_config(self) -> None:
+        self._console.print(Panel(Text("Configuration", style="highlight"), title="Configuration", title_align="left", box=box.ROUNDED, padding=(1, 2), border_style="border"))
+        self._console.print(Text(f"model: {self._config.model_name}", style="muted"))
+        self._console.print(Text(f"cwd: {self._config.cwd}", style="muted"))
+        self._console.print(Text(f"max_tool_output_tokens: {self._config.max_tool_output_tokens}", style="muted"))
+        self._console.print(Text(f"max_tool_output_tokens: {self._config.max_tool_output_tokens}", style="muted"))

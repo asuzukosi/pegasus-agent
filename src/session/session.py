@@ -41,3 +41,14 @@ class Session:
         self.updated_at = datetime.now()
         # return updated turn count
         return self._turn_count
+    
+
+    async def get_stats(self) -> dict[str, str]:
+        return {
+            "turn_count": self._turn_count,
+            "updated_at": self.updated_at.isoformat(),
+            "created_at": self.created_at.isoformat(),
+
+        }
+    
+    
