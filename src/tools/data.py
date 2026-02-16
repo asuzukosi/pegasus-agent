@@ -69,3 +69,4 @@ class ToolConfirmation:
     tool_name: str
     params: dict[str, Any]
     description: str
+    is_dangerous: bool = False

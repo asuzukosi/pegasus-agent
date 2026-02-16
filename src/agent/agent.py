@@ -5,11 +5,14 @@ from src.client.response import StreamEventType, ToolCall, TokenUsage
 from src.context.data import ToolResultMessage
 from src.session.session import Session
 from src.config.config import Config
+from src.tools.data import ToolConfirmation
+from typing import Callable, Awaitable
 
 class Agent:
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, confirmation_callback: Callable[[ToolConfirmation], Awaitable[bool]] | None = None) -> None:
         self._config = config
         self._session: Session | None = None
+        self._confirmation_callback = confirmation_callback
 
 
     async def run(self, message: str):
@@ -87,7 +90,7 @@ class Agent:
     async def __aenter__(self) -> 'Agent':
         # initialize session if not already initialized
         if self._session is None:
-            self._session = Session(self._config)
+            self._session = Session(self._config, self._confirmation_callback)
             await self._session.initialize()
         return self
 

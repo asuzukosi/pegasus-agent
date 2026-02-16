@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import List, Any, Dict
 from pathlib import Path
+from enum import Enum
 import os
 
 class ModelConfig(BaseModel):
@@ -39,11 +40,20 @@ class MCPServerConfig(BaseModel):
         if has_command and not self.cwd:
             raise ValueError("cwd must be provided when command is provided")
         return self
+    
+class ApprovalPolicy(str, Enum):
+    ON_REQUEST = "on_request"
+    ON_FAILURE = "on_failure"
+    AUTO = "auto"
+    AUTO_EDIT = "auto_edit"
+    NEVER = "never"
+    YOLO = "yolo"
 
 class Config(BaseModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
     cwd: Path = Field(default_factory=Path.cwd)
     shell_environment: ShellEnvironmentPolicy = Field(default_factory=ShellEnvironmentPolicy)
+    approval: ApprovalPolicy = ApprovalPolicy.ON_REQUEST
     max_turns: int = 100
     max_tool_output_tokens: int = 50_000
     developer_instructions: str | None = None

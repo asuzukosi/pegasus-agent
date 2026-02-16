@@ -7,6 +7,7 @@ import asyncio
 import fnmatch
 import sys
 import os
+from src.tools.data import ToolConfirmation
 
 class ShellParams(BaseModel):
     command: str = Field(..., description="The command to run")
@@ -42,6 +43,15 @@ class ShellTool(Tool):
 
     def __init__(self, config: Config) -> None:
         self._config = config
+
+    def get_confirmation(self, invocation: ToolInvocation) -> ToolConfirmation:
+        params = ShellParams(**invocation.params)
+        return ToolConfirmation(
+            tool_name=self.name,
+            params=params,
+            description=f"Write file {params.path}"
+            # TODO: pass in the file diff to the function invocation
+        )
 
     def _build_environment(self) -> dict[str, str]:
         env = os.environ.copy()

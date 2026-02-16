@@ -16,7 +16,7 @@ class CLI:
         self._tui = TUI(self._config)
 
     async def run_single(self, message: str) -> None:
-        async with Agent(self._config) as agent:
+        async with Agent(self._config, self._tui.handle_confirmation) as agent:
             self._agent = agent
             self._process_message(message)
 
@@ -26,7 +26,7 @@ class CLI:
             f"cwd: {self._config.cwd}",
             "commands: /help /config /approval /model /exit"])
         
-        async with Agent(self._config) as agent:
+        async with Agent(self._config, self._tui.handle_confirmation) as agent:
             self._agent = agent
             while True:
                 try:

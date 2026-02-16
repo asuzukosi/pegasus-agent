@@ -7,8 +7,12 @@ from datetime import datetime
 from src.tools.discovery import ToolDiscoveryManager
 from src.tools.mcp.manager import MCPManager
 from src.context.compaction import ChatCompressor
+from src.security.approvals import ApprovalManager
+from src.tools.data import ToolConfirmation
+from typing import Callable, Awaitable
+
 class Session:
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, confirmation_callback: Callable[[ToolConfirmation], Awaitable[bool]] | None = None) -> None:
         self.session_id = str(uuid.uuid4())
         self._config = config
         self._client = LLMClient(self._config)
@@ -17,6 +21,7 @@ class Session:
         self._tool_discovery_manager = ToolDiscoveryManager(self._config, self._tool_registry)
         self._mcp_manager = MCPManager(self._config)
         self._chat_compressor = ChatCompressor(self._client)
+        self._approval_manager = ApprovalManager(self._config, confirmation_callback)
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
         self._turn_count = 0

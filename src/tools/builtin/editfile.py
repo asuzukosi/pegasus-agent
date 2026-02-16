@@ -4,7 +4,10 @@ from src.config.config import Config
 from pydantic import BaseModel, Field
 from src.utils.paths import resolve_path, ensure_parent_directory
 from pathlib import Path
-class EditIfFileParams(BaseModel):
+from src.tools.data import ToolConfirmation
+
+
+class EditFileParams(BaseModel):
     path: str = Field(..., description="The path to the file to edit")
     old_string: str = Field(..., description="The exact text to find and replace Must match exactly (including whitespace and identation) and must be unique in the file unless replace_all is true")
     new_string: str = Field(..., description="The text to replace old string with. Can be empty to delete the old string.")
@@ -17,11 +20,21 @@ class EditFileTool(Tool):
     "unless replace_all is true. Use this for precise, surgical edits. "\
     "For creating new files or complete rewrites, use write_file instead."
     type: ToolType = ToolType.WRITE
-    schema: EditIfFileParams = EditIfFileParams
+    schema: EditFileParams = EditFileParams
 
 
     def __init__(self, config: Config) -> None:
         self._config = config
+
+
+    def get_confirmation(self, invocation: ToolInvocation) -> ToolConfirmation:
+        params = EditFileParams(**invocation.params)
+        return ToolConfirmation(
+            tool_name=self.name,
+            params=params,
+            description=f"Write file {params.path}"
+            # TODO: pass in the file diff to the function invocation
+        )
 
     def _no_match_error(self, old_string:str, content:str, path: Path) -> str:
         lines =  content.splitlines()
@@ -46,7 +59,7 @@ class EditFileTool(Tool):
         return ToolResult.error_result(error_msg)
 
     async def _execute(self, invocation: ToolInvocation) -> ToolResult:
-        params = EditIfFileParams(**invocation.params)
+        params = EditFileParams(**invocation.params)
         path = resolve_path(invocation.cwd, params.path)
         if not path.exists() and not params.old_string:
             return ToolResult.error_result(f"File does not exist: {path.as_posix()}")

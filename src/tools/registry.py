@@ -4,8 +4,10 @@ from src.utils.logger import logger
 from src.tools.data import ToolResult, ToolInvocation
 from src.tools.builtin import get_all_builtin_tools, get_default_sub_agent_definitions, SubAgentTool
 from src.config.config import Config
-
+from src.security.approvals import ApprovalManager
 from pathlib import Path
+
+
 class ToolRegistry:
     def __init__(self, config: Config):
         self._tools: Dict[str, Tool] = {}
@@ -49,14 +51,17 @@ class ToolRegistry:
     def get_all(self) -> List[Tool]:
         return list(self._tools.values()) + list(self._mcp_tools.values())
     
-    async def invoke(self, name: str, params: Dict[str, Any], cwd: Path) -> ToolResult:
+    async def invoke(self, name: str, params: Dict[str, Any], cwd: Path, approval_manager: ApprovalManager | None = None) -> ToolResult:
         tool: Tool | None = self.get(name)
         if tool is None:
             return ToolResult.error_result(f"Tool {name} not found in registry")
+
         validation_errors = tool.validate_params(params)
         if validation_errors:
             return ToolResult.error_result(f"Validation errors: {'; '.join(validation_errors)}", metadata=dict(tool_name=name, validation_errors=validation_errors))
         tool_invocation = ToolInvocation(cwd=cwd, params=params)
+        if approval_manager:
+            tool.get_confirmation(tool_invocation)
         try:
             result = await tool.execute(tool_invocation)
             return result
