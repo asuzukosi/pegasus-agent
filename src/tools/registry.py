@@ -1,40 +1,32 @@
+from __future__ import annotations
+
 from typing import Dict, List, Any, Type
 from src.tools.base import Tool
 from src.utils.logger import logger
 from src.tools.data import ToolResult, ToolInvocation
-from src.tools.builtin import get_all_builtin_tools, get_default_sub_agent_definitions, SubAgentTool
+from src.tools.builtin import get_all_builtin_tools
 from src.config.config import Config
-from src.security.approvals import ApprovalManager, ApprovalContext, ApprovalDecision
 from pathlib import Path
 
 
 class ToolRegistry:
     def __init__(self, config: Config):
         self._tools: Dict[str, Tool] = {}
-        self._mcp_tools: Dict[str, Tool] = {}
         self._config = config
 
     def register(self, tool: Tool) -> None:
-        if tool.name is self._tools:
-            logger.warning(f"Tool {tool.name} already registered. Overwriting...")
-        # TODO: this would be problematic for sub agents
-        if self._config.allowed_tools and tool.name not in self._config.allowed_tools:
-            logger.warning(f"Tool {tool.name} not in allowed tools list. Skipping...")
-            return
+        if tool.name in self._tools:
+            logger.warning(f"[tool registry] tool {tool.name} already registered. overwriting...")
         self._tools[tool.name] = tool
-        logger.debug(f"Tool {tool.name} registered successfully")
-
-    def register_mcp_tool(self, tool: Tool) -> None:
-        self._mcp_tools[tool.name] = tool
-        logger.debug(f"MCP tool {tool.name} registered successfully")
+        logger.info(f"[tool registry] tool {tool.name} activated🔥")
 
 
     def unregister(self, tool_name: str) -> bool:
         if tool_name not in self._tools:
-            logger.warning(f"Tool {tool_name} not found in registry")
+            logger.warning(f"tool {tool_name} not found in registry")
             return False
         del self._tools[tool_name]
-        logger.debug(f"Tool {tool_name} unregistered successfully")
+        logger.debug(f"tool {tool_name} unregistered successfully")
         return True
     
     def get_schemas(self) -> List[dict[str, Any]]:
@@ -42,62 +34,49 @@ class ToolRegistry:
         return [tool.to_openai_schema() for tool in tools]
 
     def get(self, tool_name: str) -> Tool | None:
-        if tool_name not in self._tools:
+        if tool_name in self._tools:
             return self._tools[tool_name]
-        if tool_name not in self._mcp_tools:
-            return self._mcp_tools[tool_name]
         return None
     
     def get_all(self) -> List[Tool]:
-        return list(self._tools.values()) + list(self._mcp_tools.values())
+        return list(self._tools.values())
     
-    async def invoke(self, name: str, params: Dict[str, Any], cwd: Path, approval_manager: ApprovalManager | None = None) -> ToolResult:
+    async def invoke(self, name: str, params: Dict[str, Any], cwd: Path) -> ToolResult:
         tool: Tool | None = self.get(name)
         if tool is None:
-            return ToolResult.error_result(f"Tool {name} not found in registry")
+            return ToolResult.error_result(f"tool {name} not found in registry")
 
         validation_errors = tool.validate_params(params)
         if validation_errors:
-            return ToolResult.error_result(f"Validation errors: {'; '.join(validation_errors)}", metadata=dict(tool_name=name, validation_errors=validation_errors))
+            return ToolResult.error_result(f"validation errors: {'; '.join(validation_errors)}", metadata=dict(tool_name=name, validation_errors=validation_errors))
         tool_invocation = ToolInvocation(cwd=cwd, params=params)
-        if approval_manager:
-            confirmation  = await tool.get_confirmation(tool_invocation)
-            if confirmation:
-                context = ApprovalContext(
-                    tool_name=name,
-                    params=params,
-                    is_mutating=tool.is_mutating(params),
-                    affected_paths=[],
-                    command=None,
-                    is_dangerous=confirmation.is_dangerous
-                )
-                decision = await approval_manager.check_approval(context)
-                if decision == ApprovalDecision.REJECTED:
-                    return ToolResult.error_result(f"Approval rejected: {confirmation.description}")
-                elif decision == ApprovalDecision.NEEDS_CONFIRMATION:
-                    approved = await approval_manager.request_confirmation(confirmation)
-                    if not approved:
-                        return ToolResult.error_result(f"Approval not granted: {confirmation.description}")
-                elif decision == ApprovalDecision.APPROVED:
-                    pass
-                else:
-                    return ToolResult.error_result(f"Unknown approval decision: {decision}")
         try:
             result = await tool.execute(tool_invocation)
             return result
         except Exception as e:
-            logger.exception(f"Error invoking tool {name} with error: {e}")
+            logger.exception(f"error invoking tool {name} with error: {e}")
             return ToolResult.error_result(f"internal error while invoking tool {name}: {e}")
+
+    async def cleanup(self) -> None:
+        seen_ids: set[int] = set()
+        for tool in self.get_all():
+            tool_id = id(tool)
+            if tool_id in seen_ids:
+                continue
+            seen_ids.add(tool_id)
+            close = getattr(tool, "close", None)
+            if close is None:
+                continue
+            try:
+                await close()
+            except Exception as e:
+                logger.warning(f"error cleaning up tool {tool.name}: {e}")
         
 
 def create_default_registry(config: Config) -> ToolRegistry:
     registry = ToolRegistry(config)
-    BUILTIN_TOOLS: List[Type[Tool]] = get_all_builtin_tools(config)
+    BUILTIN_TOOLS: List[Type[Tool]] = get_all_builtin_tools()
     for tool in BUILTIN_TOOLS:
         registry.register(tool(config))
-
-    for sub_agent_definition in get_default_sub_agent_definitions(config):
-        registry.register(SubAgentTool(config, sub_agent_definition.name, 
-                                       sub_agent_definition.description, sub_agent_definition.goal_prompt, sub_agent_definition.allowed_tools, sub_agent_definition.max_turns, sub_agent_definition.timeout))
     return registry
     

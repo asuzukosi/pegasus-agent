@@ -22,7 +22,7 @@ class TodosParams(BaseModel):
 
 class TodosTool(Tool):
     name: str = "todos"
-    description: str = "Manage task list for the current session. Use this to track progress on complex tasks"
+    description: str = "Manage task list for the current session. ALWAYS use todos when asked to do more than one unit of work. Use this to track progress on complex tasks. When task complexity is exceeding a single operation use the todo list to track progress. Tasks should be modular and digestable so you will be able to execute them in isolation. Mark tasks as completed as you finish them. When neccessary verify a task is completed before marking as done."
     type: ToolType = ToolType.MEMORY
     schema: TodosParams = TodosParams
 
@@ -31,7 +31,7 @@ class TodosTool(Tool):
         self._todos: dict[str, str] = {}
         self._next_id: int = 1
 
-    def _execute(self, invocation: ToolInvocation) -> ToolResult:
+    async def _execute(self, invocation: ToolInvocation) -> ToolResult:
         params = TodosParams(**invocation.params)
         
         if params.action == TodosAction.ADD:
@@ -69,8 +69,8 @@ class TodosTool(Tool):
             return ToolResult.success_result(output=f"Cleared {prev_len} todos. There are now {len(self._todos)} todos left.")
         return ToolResult.error_result(f"Invalid action: {params.action} the valid actions are: {', '.join([action.value for action in TodosAction])}")
 
-    def execute(self, invocation: ToolInvocation) -> ToolResult:
+    async def execute(self, invocation: ToolInvocation) -> ToolResult:
         try:
-            return self._execute(invocation)
+            return await self._execute(invocation)
         except Exception as e:
             return ToolResult.error_result(f"Error managing todos with error: {e}")

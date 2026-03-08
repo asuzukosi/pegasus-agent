@@ -3,6 +3,7 @@ from src.tools.data import ToolType, ToolInvocation, ToolResult
 from src.config.config import Config
 from pydantic import BaseModel, Field   
 from ddgs import DDGS
+from src.utils.logger import logger
 
 class WebSearchParams(BaseModel):
     query: str = Field(..., description="The query to search for")
@@ -18,11 +19,10 @@ class WebSearchTool(Tool):
     def __init__(self, config: Config) -> None:
         self._config = config
 
-    def _execute(self, invocation: ToolInvocation) -> ToolResult:
+    async def _execute(self, invocation: ToolInvocation) -> ToolResult:
         params = WebSearchParams(**invocation.params)
         results = []
         try:
-            # TODO: make this customizable by the llm
             results = DDGS().text(params.query, region="us-en", safesearch="off", timelimit="y", page=1, backend="auto")
         except Exception as e:
             return ToolResult.error_result(f"Error searching the web with error: {e}")
@@ -31,10 +31,10 @@ class WebSearchTool(Tool):
         
         output_lines = [f'Search results for "{params.query}":']
         for idx, result in enumerate(results[:params.max_results]):
-            output_lines.append(f'{idx+1}. Title: {result["title"]}')
-            output_lines.append(f'         URL: {result["url"]}')
-            if result.get("snippet"):
-                output_lines.append(f'         Snippet: {result["snippet"]}')
+            output_lines.append(f'{idx+1}. Title: {result.get("title")}')
+            output_lines.append(f'         URL: {result.get("href")}')
+            if result.get("body"):
+                output_lines.append(f'         Snippet: {result.get("body")}')
             else:
                 output_lines.append(f'         No snippet available')
             output_lines.append('-' * 100)

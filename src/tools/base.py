@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Type
 from pydantic import BaseModel, ValidationError
-from src.tools.data import ToolInvocation, ToolResult, ToolType, ToolConfirmation
+from src.tools.data import ToolInvocation, ToolResult, ToolType
 
 class Tool(ABC):
     name: str = "base_tool"
@@ -25,7 +25,7 @@ class Tool(ABC):
                 if key not in params:
                     missing_params.append(f"Missing required parameter: {key}")
             return missing_params
-        elif isinstance(schema, Type[BaseModel]):
+        elif isinstance(schema, type) and issubclass(schema, BaseModel):
             try:
                 schema.model_validate(params).model_dump()
             except ValidationError as e:
@@ -42,20 +42,10 @@ class Tool(ABC):
     def is_mutating(self, params: dict[str, Any]) -> bool:
         return self.type in [ToolType.WRITE, ToolType.BASH, ToolType.NETWORK, ToolType.MEMORY]
     
-    async def get_confirmation(self, invocation: ToolInvocation) -> ToolConfirmation | None:
-        if not self.is_mutating(invocation.params):
-            return None
-        
-        return ToolConfirmation(
-            tool_name=self.name,
-            params=invocation.params,
-            description=f"Execute {self.name}"
-        )
-    
     def to_openai_schema(self) -> dict[str, Any]:
         schema = self.schema
 
-        if isinstance(schema, Type[BaseModel]):
+        if isinstance(schema, type) and issubclass(schema, BaseModel):
             json_schema = schema.model_json_schema()
             result = {
                 "name": self.name,
@@ -81,3 +71,6 @@ class Tool(ABC):
             return result
         
         raise ValueError(f"Invalid schema type for tool {self.name}: {type(schema)}")
+
+    async def close(self) -> None:
+        return None

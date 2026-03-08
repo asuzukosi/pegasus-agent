@@ -4,7 +4,6 @@ from src.config.config import Config
 from pydantic import BaseModel, Field
 from src.utils.paths import resolve_path, ensure_parent_directory
 from pathlib import Path
-from src.tools.data import ToolConfirmation
 
 
 class EditFileParams(BaseModel):
@@ -26,15 +25,6 @@ class EditFileTool(Tool):
     def __init__(self, config: Config) -> None:
         self._config = config
 
-
-    def get_confirmation(self, invocation: ToolInvocation) -> ToolConfirmation:
-        params = EditFileParams(**invocation.params)
-        return ToolConfirmation(
-            tool_name=self.name,
-            params=params,
-            description=f"Write file {params.path}"
-            # TODO: pass in the file diff to the function invocation
-        )
 
     def _no_match_error(self, old_string:str, content:str, path: Path) -> str:
         lines =  content.splitlines()

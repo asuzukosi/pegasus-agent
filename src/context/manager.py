@@ -4,6 +4,7 @@ from src.prompts.system import get_system_prompt
 from src.utils.text import count_tokens
 from src.config.config import Config
 from src.client.response import TokenUsage
+from src.tools.data import ToolImage
 
 
 class ContextManager:
@@ -11,34 +12,55 @@ class ContextManager:
     PRUNE_MINIMUM_TOKENS = 20_000
     
     def __init__(self, config: Config) -> None:
-        self._config = config
-        self._system_prompt = get_system_prompt()
+        self.config = config
+        self.system_prompt = get_system_prompt(config)
         self._messages: List[MessageItem] = []
-        self._model_name: str | None = None
-        self._latest_usage: TokenUsage | None = TokenUsage()
-        self._total_usage: TokenUsage | None = TokenUsage()
+        self.model_name: str | None = config.model_name
+        self.current_usage: TokenUsage = TokenUsage()
+        self.latest_usage: TokenUsage = TokenUsage()
+        self.total_usage: TokenUsage = TokenUsage()
 
-    def add_user_message(self, content: str, tool_calls: List[Dict[str, Any]] | None = None) -> None:
+    def _message_token_count(self, content: str) -> int:
+        return count_tokens(content or "", self.model_name or "")
+
+    def _refresh_current_usage(self) -> None:
+        total_tokens = self._message_token_count(self.system_prompt or "")
+        for message in self._messages:
+            if message.token_count is None:
+                message.token_count = self._message_token_count(message.content or "")
+            total_tokens += message.token_count
+        self.current_usage = TokenUsage(total_tokens=total_tokens)
+
+    def add_user_message(
+        self,
+        content: str,
+        tool_calls: List[Dict[str, Any]] | None = None,
+        images: List[ToolImage] | None = None,
+    ) -> None:
         item = MessageItem(
             role=MessageRole.USER,
             content=content or "", 
-            token_count=count_tokens(content or "", self._model_name or ""),
-            tool_calls=tool_calls or []
+            token_count=self._message_token_count(content or ""),
+            tool_calls=tool_calls or [],
+            images=images or [],
         )
         self._messages.append(item)
+        self._refresh_current_usage()
  
-    def add_assistant_message(self, content: str) -> None:
+    def add_assistant_message(self, content: str, tool_calls: List[Dict[str, Any]] | None = None) -> None:
         item = MessageItem(
             role=MessageRole.ASSISTANT,
             content=content or "", 
-            token_count=count_tokens(content or "", self._model_name or "")
+            token_count=self._message_token_count(content or ""),
+            tool_calls=tool_calls or []
         )
         self._messages.append(item)
+        self._refresh_current_usage()
  
     def get_messages(self) -> List[Dict[str, Any]]:
         messages: List[Dict[str, Any]] = []
-        if self._system_prompt:
-            messages.append({"role": "system", "content": self._system_prompt})
+        if self.system_prompt:
+            messages.append({"role": "system", "content": self.system_prompt})
         for item in self._messages:
             messages.append(item.to_dict())
         return messages
@@ -46,63 +68,44 @@ class ContextManager:
     def add_tool_result(self, tool_result: ToolResultMessage) -> None:
         item = MessageItem(
             role=MessageRole.TOOL,
-            content=tool_result.content,
+            content=tool_result.content or "",
+            token_count=self._message_token_count(tool_result.content or ""),
             tool_call_id=tool_result.tool_call_id,
-            token_count=count_tokens(tool_result.content or "", self._model_name or "")
         )
         self._messages.append(item)
+        self._refresh_current_usage()
 
-    def set_latest_usage(self, usage: TokenUsage) -> None:
-        self._latest_usage = usage
+    def set_usage(self, usage: TokenUsage) -> None:
+        self.total_usage += usage
+        self.latest_usage = usage
+        self._refresh_current_usage()
 
-    def add_usage(self, usage: TokenUsage) -> None:
-        self._total_usage = self._total_usage + usage if self._total_usage else usage
+    def current_context_tokens(self) -> int:
+        self._refresh_current_usage()
+        return self.current_usage.total_tokens
 
     def needs_compression(self) -> bool:
-        context_limit = self._config.model.context_window
-        current_tokens = self._latest_usage.total_tokens
+        context_limit = self.config.model.context_window
+        if not context_limit:
+            return False
+        return self.current_context_tokens() > int(context_limit * 0.8)
 
-        return current_tokens > (context_limit * 0.8)
-    
-    def replace_with_compressed_summary(self, summary: str) -> None:
+    def replace_with_compressed_summary(self, summary: str, preserve_last_n: int = 2) -> None:
+        preserved_messages = self._messages[-preserve_last_n:] if preserve_last_n > 0 else []
         self._messages = []
-        # TODO: adjust the prompt and save it in the prompting library
-        compaction_message = f"The following is a compressed summary of the previous context: {summary}"
-        assistant_message = f"I acknowledge that the previous context has been compressed. I will now proceed with the conversation."
-        self.add_user_message(compaction_message)
-        self.add_assistant_message(assistant_message)
+        self.add_user_message(
+            "compressed summary of previous context:\n" + summary,
+        )
+        self.add_assistant_message(
+            "understood. i will use this compressed summary together with the preserved recent context."
+        )
+        self._messages.extend(preserved_messages)
+        self._refresh_current_usage()
 
-    def prune_tool_outputs(self) -> None:
-        user_message_count = sum(1 for message in self._messages if message.role == MessageRole.USER)
-        if user_message_count < 2:
-            return 0
-        total_tokens = 0
-        prune_tokens = 0
-        to_prune: List[MessageItem] = []
-        for msg in reversed(self._messages):
-            if msg.pruned_at:
-                break
-            if msg.role == MessageRole.TOOL and msg.tool_call_id:
-                tokens = msg.token_count or count_tokens(msg.content or "", self._model_name or "")
-                total_tokens += tokens
-                if total_tokens > self.PRUNE_PROTECT_TOKENS:
-                    prune_tokens += tokens
-                    to_prune.append(msg)
-
-        if prune_tokens < self.PRUNE_MINIMUM_TOKENS:
-            return 0
-        
-        pruned_count = 0
-        for msg in to_prune:
-            msg.content = '[Old tool result content cleared]'
-            msg.token_count = count_tokens(msg.content or "", self._model_name or "")
-            pruned_count += 1
-
-
-        return pruned_count
-
+   
     def clear(self) -> None:
         self._messages = []
-        self._latest_usage = TokenUsage()
-        self._total_usage = TokenUsage()
+        self.current_usage = TokenUsage()
+        self.latest_usage = TokenUsage()
+        self.total_usage = TokenUsage()
 

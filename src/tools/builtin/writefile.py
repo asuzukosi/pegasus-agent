@@ -1,5 +1,5 @@
 from src.tools.base import Tool
-from src.tools.data import ToolType, ToolInvocation, ToolResult, FileDiff, ToolConfirmation
+from src.tools.data import ToolType, ToolInvocation, ToolResult, FileDiff
 from src.config.config import Config
 from pydantic import BaseModel, Field
 from src.utils.paths import resolve_path, ensure_parent_directory
@@ -20,15 +20,6 @@ class WriteFileTool(Tool):
 
     def __init__(self, config: Config) -> None:
         self._config = config
-
-    def get_confirmation(self, invocation: ToolInvocation) -> ToolConfirmation:
-        params = WriteFileParams(**invocation.params)
-        return ToolConfirmation(
-            tool_name=self.name,
-            params=params,
-            description=f"Write file {params.path} with content: {params.content}"
-            # TODO: pass in the file diff to the function invocation
-        )
 
     async def _execute(self, invocation: ToolInvocation) -> ToolResult:
         params = WriteFileParams(**invocation.params)

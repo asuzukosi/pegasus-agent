@@ -5,6 +5,7 @@ from src.tools.data import ToolType, ToolInvocation, ToolResult
 from src.utils.paths import resolve_path, is_binary_file
 from src.utils.text import estimate_tokens, truncate_text
 from src.config.config import Config
+from src.utils.logger import logger
 
 MAX_FILE_SIZE = 1024 * 1024 * 10 # 10MB
 
@@ -51,7 +52,7 @@ class ReadFileTool(Tool):
         lines = content.splitlines()
         total_lines = len(lines)
         if total_lines == 0:
-            return ToolResult.success_result(output="File is empty", metadata=dict(total_lines=0))
+            return ToolResult.success_result(output="File is empty", metadata=dict(total_lines=0), truncated=False)
         
         start_idx = max(0, params.offset - 1)
         if params.limit is not None:
@@ -64,6 +65,7 @@ class ReadFileTool(Tool):
 
         output = "\n".join(formated_lines)
         token_count = estimate_tokens(output)
+        truncated = False
 
         if token_count > self._max_output_tokens:
            output = truncate_text(output, self._config.model_name, self._max_output_tokens)
@@ -81,10 +83,12 @@ class ReadFileTool(Tool):
         return ToolResult.success_result(
             output=output,
             truncated = truncated,
-            metadata=dict(path=path.as_posix()), total_lines=total_lines, shown_start=start_idx + 1, shown_end=end_idx)
+            metadata=dict(path=path.as_posix(), total_lines=total_lines, shown_start=start_idx + 1, shown_end=end_idx)
+        )
 
     async def execute(self, invocation: ToolInvocation) -> ToolResult:
         try:
-            return self._execute(invocation)
+            result = await self._execute(invocation)
+            return result
         except Exception as e:
             return ToolResult.error_result(f"Error reading file with error: {e}")

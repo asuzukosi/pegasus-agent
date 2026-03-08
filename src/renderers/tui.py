@@ -7,14 +7,50 @@ from rich.table import Table
 from rich import box
 from rich.panel import Panel
 from pathlib import Path
-from rich.prompt import Prompt
 from rich.syntax import Syntax
 from rich.console import Group
 import re
 from src.utils.paths import display_path_rel_to_cwd
 from src.config.config import Config
 from src.utils.text import truncate_text
-from src.tools.data import FileDiff, ToolConfirmation
+from src.tools.data import FileDiff
+from src.utils.logger import logger
+from art import text2art
+
+_GREEN = "\033[32m"
+_RESET = "\033[0m"
+
+# flying horse (Pegasus) ascii art
+FLYING_HORSE_ART = r"""
+====================================================================================================
+====================================================================================================
+=====-:=====================================================================================-:-=====
+=====-.:-===============================================-==================================-..-=====
+======:..:-===============================:.===========- :===============================-:..:======
+===--==:...:=============================.:=:=========-:*.:============================-:...:==--===
+===:.:-=-:...:-========================== +#::========.+#::==========================-:...:---:.-===
+====:...:-::...::-=======================::+:..........:-.-=======================--:...::-:...:====
+=====:.....:::......-=====================.     ....     .=====================-.....::::....::=====
+==-.::--::....:::.    .:--===============:    ........    :===============--:.    .:::....::--::.-==
+===-....:::::....         .-=+++=========:   ..........   -=========+++=-.         ....:::::....-===
+=====:::......:::             .-*#++======   ..........   ======+*#*-.             :::......:::=====
+====------::::....               :+##+===-%* .......... +%-===+##+.               ....::::------====
+=====:......::::::                 .=###+-=*: ........ .+=-+###=.                 ::::::......:=====
+======--:::........                  .-*#++-   .......  :++#+-.                 .........:::--======
+=======::::::::......                 .=+++-   ......   .+++=.                 ......::::::::=======
+========-::.::::::::..              .-+++++:   ......   .+++++:               ..::::::::.::-========
+============::.....:::...         .:+++++++.   ......    =+++++=.          ...:::.....::============
+=============-:::::...::....     .=++++++++..  ......   .=+++++++-.     ....::...:::::-=============
+===============-:..:::..::..::..=++++++++++..  ......  ..-++++++++=:..::..::..:::..:-===============
+===================:..::...:::-+++++++++++=... ......  ..-++++++++++=:.::...::..:===================
+====================-=...::::+++++++++++++-... ...... ...:++++++++++++:.:::..:=-====================
+========================--:=++++++++++++++-....:....:=...:+++++++++++++=::--========================
+=========================+++++++++++++++++:...=@+...#@:...+++++++++++++++===========================
+=======================+++++++++++++++++++:...:%%..:@+....=++++++++++++++++=========================
+======================++++++++++++++++++++....:-:..:=*:...=++++++++++++++++++=======================
+====================+++++++++++++++++++++=.....:----::....-+++++++++++++++++++======================
+==================+++++++++++++++++++++++=................:+++++++++++++++++++++====================
+"""
 
 AGENT_THEME = Theme(
     {
@@ -26,17 +62,20 @@ AGENT_THEME = Theme(
         "muted": "gray50",
         "border": "grey35", 
         "highlight": "bold cyan",
+        "reasoning": "bright_green",
         # roles
         "user": "bright_blue bold",
-        "assistant": "bright_white",
+        "assistant": "blue bold",
         # tools
         "tool": "bright_magenta bold",
         "tool.read": "cyan",
         "tool.write": "yellow",
-        "tool.shell": "magenta",
+        "tool.edit": "bright_yellow",
+        "tool.bash": "magenta",
         "tool.network": "bright_blue",
         "tool.memory": "green",
         "tool.mcp": "bright_cyan",
+        "tool.sub_agent": "bright_magenta",
         # code / blocks
         "code": "white",
     }
@@ -55,8 +94,10 @@ class TUI:
         self._console = console or get_console()
         self._config = config
         self._assistant_stream_open = False
+        self._reasoning_stream_open = False
         self._tool_arguments_by_call_id: Dict[str, Dict[str, Any]] = {}
         self._cwd: Path | None = config.cwd
+        self._full_width: int | None = self._console.width
 
     def _begin_assistant(self) -> None:
         self._console.print()
@@ -70,6 +111,19 @@ class TUI:
     
     def stream_assistant_delta(self, content: str) -> None:
         self._console.print(content, end="", markup=False, style="assistant") 
+    
+    def _begin_reasoning(self) -> None:
+        self._console.print()
+        self._console.print(Rule(Text("Reasoning Start", style="reasoning")))
+        self._reasoning_stream_open = True
+
+    def stream_reasoning_delta(self, content: str) -> None:
+        self._console.print(content, end="", markup=False, style="reasoning")
+    
+    def _end_reasoning(self) -> None:
+        self._console.print()
+        self._console.print(Rule(Text("Reasoning End", style="reasoning")))
+        self._reasoning_stream_open = False
     
     def _order_args(self, tool_name:str, args: dict[str, Any]) -> list[str]:
         _PREFERRED_ORDER= {
@@ -109,8 +163,8 @@ class TUI:
                 value = "true" if value else "false"
             table.add_row(key, str(value))
         return table
-    
-    def _guess_lexer(path: str | None) -> str:
+
+    def _guess_lexer(self, path: str | None) -> str:
         if not path:
             return "text"
         suffix = Path(path).suffix.lower()
@@ -120,10 +174,9 @@ class TUI:
             return "javascript"
         if suffix in (".html", ".htm", ".xhtml", ".xht"):
             return "html"
-        if suffix in (".css"):
+        if suffix == ".css":
             return "css"
         return "text"
-    
 
     def tool_call_start(
             self,
@@ -133,9 +186,9 @@ class TUI:
             arguments: dict[str, Any]
     ) -> None:
         self._tool_arguments_by_call_id[call_id] = arguments
-        border_style = f"tool.{tool_kind}" if tool_kind else "tool"
+        border_style = f"tool.{tool_kind.value}" if tool_kind else "tool"
 
-        title = Text.assemble((". ", "muted"), (name, "tool"), (" ", "muted"), )(f"#{call_id[:8]}", "muted")
+        title = Text.assemble(("🤔 ", "muted"), (name, "tool"), (" ", "muted"), (f"#{call_id[:8]}", "muted"))
         display_args = dict(arguments)
         for key in ('pwd', 'cwd'):
             val = display_args.get(key)
@@ -173,6 +226,180 @@ class TUI:
             return None
         return start_line, "\n".join(code_lines)
 
+    def _render_read_file_complete(
+        self,
+        output: str,
+        primary_path: str | None,
+        shown_start: int | None,
+        shown_end: int | None,
+        total_lines: int | None,
+    ) -> List[Any]:
+        blocks = []
+        parsed = self._extract_read_file_code(output)
+        if not parsed:
+            blocks.append(Syntax(output, "text", theme="monokai", word_wrap=False))
+            return blocks
+        start_line, code = parsed
+        lexer = self._guess_lexer(primary_path)
+        header_parts = [display_path_rel_to_cwd(primary_path, self._cwd) if primary_path else "unknown file"]
+        header_parts.append(" . ")
+        if shown_start is not None and shown_end is not None and total_lines is not None:
+            header_parts.append(f"Showing lines {shown_start}-{shown_end} of {total_lines}")
+        blocks.append(Text(" ".join(header_parts), style="muted"))
+        blocks.append(Syntax(code, lexer, theme="monokai", line_numbers=True, start_line=start_line, word_wrap=False))
+        return blocks
+
+    def _render_write_edit_complete(self, output: str, diff: FileDiff | None, truncated: bool) -> List[Any]:
+        blocks = []
+        output_line = output.strip() if output.strip() else "Completed"
+        blocks.append(Text(output_line, style="success"))
+        diff_text = diff.create_diff() if diff else ""
+        diff_display = truncate_text(diff_text, self._config.model_name, self._config.max_tool_output_tokens)
+        blocks.append(Syntax(diff_display, "diff", theme="monokai", line_numbers=True, word_wrap=False))
+        if truncated:
+            blocks.append(Text("Output truncated", style="warning"))
+        return blocks
+
+    def _render_shell_complete(
+        self, args: dict[str, Any], output: str, exit_code: int | None, truncated: bool
+    ) -> List[Any]:
+        blocks = []
+        command = args.get("command")
+        if isinstance(command, str) and command.strip():
+            blocks.append(Text(f"${command}", style="muted"))
+        if exit_code is not None:
+            blocks.append(Text(f"exit code: {exit_code}", style="muted"))
+        output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+        blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+        if truncated:
+            blocks.append(Text("Output truncated", style="warning"))
+        return blocks
+
+    def _render_list_dir_complete(self, output: str, metadata: dict[str, Any], truncated: bool) -> List[Any]:
+        blocks = []
+        path = metadata.get("path")
+        entries = metadata.get("entries")
+        summary = []
+        if isinstance(path, str):
+            summary.append(path)
+        if isinstance(entries, int):
+            summary.append(f"{entries} entries")
+        if summary:
+            blocks.append(Text(" ".join(summary), style="muted"))
+        output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+        blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+        if truncated:
+            blocks.append(Text("Output truncated", style="warning"))
+        return blocks
+
+    def _render_grep_complete(self, output: str, truncated: bool) -> List[Any]:
+        blocks = []
+        output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+        blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+        if truncated:
+            blocks.append(Text("Output truncated", style="warning"))
+        return blocks
+
+    def _render_glob_complete(self, output: str, truncated: bool) -> List[Any]:
+        blocks = []
+        output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+        blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+        if truncated:
+            blocks.append(Text("Output truncated", style="warning"))
+        return blocks
+
+    def _render_websearch_complete(self, output: str, metadata: dict[str, Any], truncated: bool) -> List[Any]:
+        blocks = []
+        results = metadata.get("results")
+        query = metadata.get("query")
+        summary = []
+        if isinstance(query, list):
+            summary.append(f"Search results for '{query}'")
+        if isinstance(results, list):
+            summary.append(f"Total results: {len(results)}")
+        if isinstance(results, int):
+            summary.append(f"{results} results")
+        if summary:
+            blocks.append(Text(".".join(summary), style="muted"))
+        output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+        blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+        if truncated:
+            blocks.append(Text("Output truncated", style="warning"))
+        return blocks
+
+    def _render_todos_complete(self, output: str, truncated: bool) -> List[Any]:
+        blocks = []
+        output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+        blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+        if truncated:
+            blocks.append(Text("Output truncated", style="warning"))
+        return blocks
+
+    def _render_memory_complete(self, output: str, truncated: bool) -> List[Any]:
+        blocks = []
+        output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+        blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+        if truncated:
+            blocks.append(Text("Output truncated", style="warning"))
+        return blocks
+
+    def _render_error_blocks(self, error: str | None, output: str) -> List[Any]:
+        blocks = []
+        if error:
+            blocks.append(Text(error, style="error"))
+        output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+        if output_display.strip():
+            blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
+        else:
+            blocks.append(Text("No output", style="error"))
+        return blocks
+
+    def _render_tool_complete_blocks(
+        self,
+        name: str,
+        call_id: str,
+        success: bool,
+        output: str,
+        error: str | None,
+        metadata: dict[str, Any],
+        truncated: bool,
+        diff: FileDiff | None,
+        exit_code: int | None,
+    ) -> List[Any]:
+        args = self._tool_arguments_by_call_id.get(call_id, {})
+        meta = metadata if isinstance(metadata, dict) else {}
+        primary_path = meta.get("path") if isinstance(meta.get("path"), str) else None
+        shown_start = meta.get("shown_start")
+        shown_end = meta.get("shown_end")
+        total_lines = meta.get("total_lines")
+
+        if not success:
+            return self._render_error_blocks(error, output)
+        if name == "read_file":
+            return self._render_read_file_complete(output, primary_path, shown_start, shown_end, total_lines)
+        if name in ("write_file", "edit_file"):
+            return self._render_write_edit_complete(output, diff, truncated)
+        if name == "shell":
+            return self._render_shell_complete(args, output, exit_code, truncated)
+        if name == "list_dir":
+            return self._render_list_dir_complete(output, meta, truncated)
+        if name == "grep":
+            return self._render_grep_complete(output, truncated)
+        if name == "glob":
+            return self._render_glob_complete(output, truncated)
+        if name == "websearch":
+            return self._render_websearch_complete(output, meta, truncated)
+        if name == "todos":
+            return self._render_todos_complete(output, truncated)
+        if name == "memory":
+            return self._render_memory_complete(output, truncated)
+
+        output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
+        blocks = [Syntax(output_display, "text", theme="monokai", word_wrap=False)] if output_display.strip() else []
+        image_paths = meta.get("image_paths")
+        if isinstance(image_paths, list) and image_paths:
+            blocks.insert(0, Text(f"images: {len(image_paths)}", style="muted"))
+        return blocks
 
     def tool_call_complete(
                 self,
@@ -187,169 +414,23 @@ class TUI:
                 diff: FileDiff | None,
                 exit_code: int | None,
         ) -> None:
-            border_style = f"tool.{tool_kind}" if tool_kind else "tool"
-            status_icon = "✅" if success else "❌"
+            border_style = f"tool.{tool_kind.value}" if tool_kind else "tool"
+            status_icon = "😊" if success else "😭"
             status_style = "success" if success else "error"
-
-            args = self._tool_arguments_by_call_id.get(call_id, {})
-
-            title = Text.assemble((f"{status_icon}", status_style), (name, "tool"), (" ", "muted"), )(f"#{call_id[:8]}", "muted")
-            primary_path = None
-            shown_start = None
-            shown_end = None
-            total_lines = None
-            blocks = []
-            if isinstance(metadata, dict) and isinstance(metadata.get("path"), str):
-                primary_path = metadata.get("path")
-                shown_start = metadata.get("shown_start")
-                shown_end = metadata.get("shown_end")
-                total_lines = metadata.get("total_lines")
-            if name == "read_file" and success:
-                start_line, code = self._extract_read_file_code(output)
-                pl = self._guess_lexer(primary_path)
-                blocks.append(Text())
-                header_parts = [display_path_rel_to_cwd(primary_path, self._cwd) if primary_path else "unknown file"]
-                header_parts.append(" . ")
-                if shown_start and shown_end and total_lines:
-                    header_parts.append(f"Showing lines {shown_start}-{shown_end} of {total_lines}")
-                header = " ".join(header_parts)
-                blocks.append(Text(header, style="muted"))
-                blocks.append(Syntax(code, pl, theme="monokai", line_numbers=True, start_line=start_line, word_wrap=False))
-            elif name in ["write_file", "edit_file"] and success:
-                output_line = output.strip() if output.strip() else "Completed"
-                blocks.append(Text(output_line, style="success"))
-                diff_text = diff.create_diff() if diff else ""
-                diff_display = truncate_text(diff_text, self._config.model_name, self._config.max_tool_output_tokens)
-                blocks.append(Syntax(diff_display, "diff", theme="monokai", line_numbers=True, word_wrap=False))
-                if truncated:
-                    blocks.append(Text("Output truncated", style="warning"))
-            elif name == "shell":
-                command = args.get("command")
-                if isinstance(command, str) and command.strip():
-                    blocks.append(Text(f"${command}", style="muted"))
-                if exit_code is not None:
-                    blocks.append(Text(f"exit code: {exit_code}", style="muted"))
-
-                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-            
-            elif name == "list_dir" and success:
-                entries = metadata.get("entries")
-                path = metadata.get("path")
-                summary = []
-                if isinstance(path, str):
-                    summary.append(path)
-                if isinstance(entries, int):
-                    summary.append(f"{entries} entries")
-                if summary:
-                    blocks.append(Text(" ".join(summary), style="muted"))
-                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-                if truncated:
-                    blocks.append(Text("Output truncated", style="warning"))
-
-            elif name == "grep" and success:
-                path = metadata.get("path")
-                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-            if truncated:
-                blocks.append(Text("Output truncated", style="warning"))
-
-            elif name == "glob" and success:
-                path = metadata.get("path")
-                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-                if truncated:
-                    blocks.append(Text("Output truncated", style="warning"))
-
-            elif name == "websearch" and success:
-                results = metadata.get("results")
-                query = metadata.get("query")
-                summary = []
-
-                if isinstance(query, list):
-                    summary.append(f"Search results for '{query}'")
-
-                if isinstance(results, list):
-                    summary.append(f"Total results: {len(results)}")
-                if isinstance(results, int):
-                    summary.append(f"{results} results")
-
-                if summary:
-                    blocks.append(Text(".".join(summary), style="muted"))
-                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-                if truncated:
-                    blocks.append(Text("Output truncated", style="warning"))
-
-            elif name == "webfetch" and success:
-                status_code = metadata.get("status_code")
-                content_length = metadata.get("content_length")
-                url = metadata.get("url")
-                summary = []
-                if isinstance(status_code, int):
-                    summary.append(f"Status code: {status_code}")
-                if isinstance(content_length, int):
-                    summary.append(f"Content length: {content_length}")
-                if isinstance(url, str):
-                    summary.append(f"URL: {url}")
-                
-                if summary:
-                    blocks.append(Text(".".join(summary), style="muted"))
-                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-                if truncated:
-                    blocks.append(Text("Output truncated", style="warning"))
-            
-            elif name == "todos" and success:
-                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-                
-            elif name == "memory" and success: # TODO: redo the representation of the memory as shown in the tui
-                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-                if truncated:
-                    blocks.append(Text("Output truncated", style="warning"))
-                    
-            if error and not success:
-                blocks.append(Text(error, style="error"))
-                output_display = truncate_text(output, self._config.model_name, self._config.max_tool_output_tokens)
-                if output_display.strip():
-                    blocks.append(Syntax(output_display, "text", theme="monokai", word_wrap=False))
-                else:
-                    blocks.append(Text("No output", style="error"))
-            
-            panel = Panel(Group(*blocks), title=title, title_align="left", subtitle=Text('completed' if success else 'failed', style="muted"), subtitle_align="right", box=box.ROUNDED, padding=(1, 2), border_style=border_style)
-            self._console.print()
-            self._console.print(panel)
-
-    def handle_confirmation(self, confirmation: ToolConfirmation) -> None:
-        output = [
-            Text(confirmation.tool_name, style="tool"),
-            Text(confirmation.description, style="code"),
-        ]
-        if confirmation.command:
-            output.append(Text(f'$ {confirmation.command}', style="warning"))
-        if confirmation.diff:
-            diff_text = confirmation.diff.to_diff()
-            output.append(Syntax(diff_text, "diff", theme="monokai", line_numbers=True, word_wrap=False))
-        
-        self._console.print()
-        self._console.print(
-            Panel(
-                Group(*output),
-                title=Text("Confirmation Required", style="warning"),
+            title = Text.assemble((f"{status_icon} ", status_style), (name, "tool"), (" ", "muted"), (f"#{call_id[:8]}", "muted"))
+            blocks = self._render_tool_complete_blocks(name, call_id, success, output, error, metadata, truncated, diff, exit_code)
+            panel = Panel(
+                Group(*blocks),
+                title=title,
                 title_align="left",
+                subtitle=Text("completed" if success else "failed", style="muted"),
+                subtitle_align="right",
                 box=box.ROUNDED,
                 padding=(1, 2),
-                border_style="warning",
+                border_style=border_style,
             )
-        )
-        response = Prompt.ask("Do you approve this action? (y/n)", choices=["y", "n"])
-        if response == "y":
-            return True
-        else:
-            return False    
+            self._console.print()
+            self._console.print(panel)
 
     def print_help(self) -> None:
         self._console.print(Panel(Text("Help", style="highlight"), title="Help", title_align="left", box=box.ROUNDED, padding=(1, 2), border_style="border"))
@@ -359,10 +440,21 @@ class TUI:
         self._console.print(Text("  /quit - Exit the program", style="muted"))
         self._console.print(Text("  /config - Show the current configuration", style="muted"))
         self._console.print(Text("  /model - Show the current model", style="muted"))
-        self._console.print(Text("  /approval - Show the current approval status", style="muted"))
 
 
-    def print_welcome(self, title:str, lines: List[str]) -> None:
+    def print_welcome(self, title: str, lines: List[str]) -> None:
+        # flying horse at top (green), no markup so brackets in art are preserved
+        horse_text = Text.from_ansi(f"{_GREEN}{FLYING_HORSE_ART.strip()}{_RESET}")
+        self._console.print(horse_text)
+        self._console.print()
+        # "Pegasus" in smaller font so it fits the console
+        try:
+            pegasus_art = text2art("Pegasus - Gives  you  wings!", font="medium")
+        except Exception:
+            pegasus_art = text2art("Pegasus - Gives  you  wings!")
+        pegasus_text = Text.from_ansi(f"{_GREEN}{pegasus_art}{_RESET}")
+        self._console.print(pegasus_text)
+        self._console.print()
         body = "\n".join(lines)
         self._console.print(
             Panel(
@@ -372,6 +464,8 @@ class TUI:
                 border_style="border",
                 box=box.ROUNDED,
                 padding=(1, 2),
+                width=self._full_width,
+                style="on grey23",
             )
         )
 
@@ -379,5 +473,5 @@ class TUI:
         self._console.print(Panel(Text("Configuration", style="highlight"), title="Configuration", title_align="left", box=box.ROUNDED, padding=(1, 2), border_style="border"))
         self._console.print(Text(f"model: {self._config.model_name}", style="muted"))
         self._console.print(Text(f"cwd: {self._config.cwd}", style="muted"))
-        self._console.print(Text(f"max_tool_output_tokens: {self._config.max_tool_output_tokens}", style="muted"))
-        self._console.print(Text(f"max_tool_output_tokens: {self._config.max_tool_output_tokens}", style="muted"))
+        # self._console.print(Text(f"max_tool_output_tokens: {self._config.max_tool_output_tokens}", style="muted"))
+        # self._console.print(Text(f"max_tool_output_tokens: {self._config.max_tool_output_tokens}", style="muted"))

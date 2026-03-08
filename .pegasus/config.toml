@@ -1,0 +1,13 @@
+[mcp_servers.hackathon_manager]
+enabled = true
+startup_timeout_sec = 10.0
+command = "node"
+args = [".pegasus/mcp_servers/hackathon_manager_server.js"]
+cwd = "."
+
+[mcp_servers.event_booking]
+enabled = true
+startup_timeout_sec = 10.0
+command = "node"
+args = [".pegasus/mcp_servers/event_booking_server.js"]
+cwd = "."

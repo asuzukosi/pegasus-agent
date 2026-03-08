@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List
-from src.tools.data import FileDiff
+from src.tools.data import FileDiff, ToolImage
 from src.client.response import TokenUsage
 
 class AgentEventType(str, Enum):
@@ -13,7 +13,9 @@ class AgentEventType(str, Enum):
     # text streaming events
     TEXT_DELTA = 'text_delta'
     TEXT_COMPLETE = 'text_complete'
-
+    # reasoning streaming events
+    REASONING_DELTA = 'reasoning_delta'
+    REASONING_COMPLETE = 'reasoning_complete'
     # tool call events
     TOOL_CALL_START = "tool_call_start"
     TOOL_CALL_COMPLETE = "tool_call_complete"
@@ -50,6 +52,14 @@ class AgentEvent:
         return cls(type=AgentEventType.TEXT_DELTA, data={'content': content})
     
     @classmethod
+    def reasoning_delta(cls, reasoning: str) -> 'AgentEvent':
+        return cls(type=AgentEventType.REASONING_DELTA, data={'reasoning': reasoning})
+    
+    @classmethod
+    def reasoning_complete(cls) -> 'AgentEvent':
+        return cls(type=AgentEventType.REASONING_COMPLETE)
+    
+    @classmethod
     def text_complete(cls, content: str) -> 'AgentEvent':
         return cls(type=AgentEventType.TEXT_COMPLETE, data={'content': content})
     
@@ -61,11 +71,25 @@ class AgentEvent:
         )
     
     @classmethod
-    def tool_call_complete(cls, call_id: str, name: str, success: bool, output: str,metadata: dict[str, Any] = {}, truncated: bool = False, error: str | None=None, diff: FileDiff | None=None, exit_code: int | None=None) -> 'AgentEvent':
+    def tool_call_complete(
+        cls,
+        call_id: str,
+        name: str,
+        success: bool,
+        output: str,
+        metadata: dict[str, Any] | None = None,
+        truncated: bool = False,
+        error: str | None = None,
+        diff: FileDiff | None = None,
+        exit_code: int | None = None,
+        images: List[ToolImage] | None = None,
+    ) -> 'AgentEvent':
         return cls(
             type=AgentEventType.TOOL_CALL_COMPLETE,
             data={'call_id': call_id, 'name': name, 'success': success, 'output': output,
-                   'metadata': metadata, 'truncated': truncated, 'error': error if error else None, 'diff': diff if diff else None, 'exit_code': exit_code if exit_code else None}
+                   'metadata': metadata or {}, 'truncated': truncated, 'error': error if error else None,
+                   'diff': diff if diff else None, 'exit_code': exit_code if exit_code else None,
+                   'images': [image.to_metadata() for image in (images or [])]}
         )
     
     @classmethod

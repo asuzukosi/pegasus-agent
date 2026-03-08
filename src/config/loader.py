@@ -40,15 +40,6 @@ def _get_project_config(cwd: Path) -> Path:
             return config_path
     return None
 
-def _get_agents_md_file(cwd: Path) -> str | None:
-    current = cwd.resolve()
-    agent_dir = current / ".pegasus"
-    if agent_dir.is_dir():
-        agents_md_path = agent_dir / "agents.md"
-        if agents_md_path.is_file():
-            return agents_md_path.read_text(encoding="utf-8")
-    return None
-
 
 def _merge_dicts(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     result = base.copy()
@@ -78,11 +69,6 @@ def load_config(cwd: Path | None) -> Config:
 
     if "cwd" not in config_dict:
         config_dict["cwd"] = cwd
-    
-    if "developer_instructions" not in config_dict:
-        agents_md = _get_agents_md_file(cwd)
-        if agents_md:
-            config_dict["developer_instructions"] = agents_md
 
     try:
         config = Config(**config_dict)

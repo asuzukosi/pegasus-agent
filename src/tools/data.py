@@ -23,7 +23,9 @@ class FileDiff:
 
     def create_diff(self) -> str:
         import difflib
-        old_lines = self.old_content.splitlines(keepends=True)
+        old_lines = []
+        if self.old_content:
+            old_lines = self.old_content.splitlines(keepends=True)
         new_lines = self.new_content.splitlines(keepends=True)
         if old_lines and not old_lines[-1].endswith("\n"):
             old_lines[-1] += "\n"
@@ -42,6 +44,22 @@ class ToolInvocation:
     params: dict[str, Any]
 
 @dataclass
+class ToolImage:
+    data_url: str
+    mime_type: str
+    path: str | None = None
+
+    def to_content_part(self) -> dict[str, Any]:
+        return {"type": "image_url", "image_url": {"url": self.data_url}}
+
+    def to_metadata(self) -> dict[str, Any]:
+        result = {"mime_type": self.mime_type}
+        if self.path:
+            result["path"] = self.path
+        return result
+
+
+@dataclass
 class ToolResult:
     success: bool
     output: str
@@ -50,10 +68,23 @@ class ToolResult:
     metadata: dict[str, Any] = field(default_factory=dict)
     truncated: bool = False
     diff: FileDiff | None = None
+    images: list[ToolImage] = field(default_factory=list)
 
     @classmethod
-    def error_result(cls, error: str, output: str = "") -> 'ToolResult':
-        return cls(success=False, output=output, error=error)
+    def error_result(
+        cls,
+        error: str,
+        output: str = "",
+        metadata: dict[str, Any] | None = None,
+        images: list[ToolImage] | None = None,
+    ) -> 'ToolResult':
+        return cls(
+            success=False,
+            output=output,
+            error=error,
+            metadata=metadata or {},
+            images=images or [],
+        )
     
     @classmethod
     def success_result(cls, output: str, **kwargs) -> 'ToolResult':
@@ -63,10 +94,3 @@ class ToolResult:
         if self.success:
             return self.output
         return f"Error: {self.error}\n\nOutput: {self.output}"
-
-@dataclass
-class ToolConfirmation:
-    tool_name: str
-    params: dict[str, Any]
-    description: str
-    is_dangerous: bool = False

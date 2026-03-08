@@ -1,0 +1,16 @@
+xmltodict
+openai
+retry
+click
+rich
+tiktoken
+platformdirs
+tomli
+duckduckgo-search
+ddgs
+fastmcp
+playwrite
+Pillow
+e2b-code-interpreter
+e2b-desktop
+python-opencv

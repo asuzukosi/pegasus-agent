@@ -1,51 +1,42 @@
+from typing import List
+from src.tools.base import Tool
 from src.tools.builtin.readfile import ReadFileTool
 from src.tools.builtin.writefile import WriteFileTool
 from src.tools.builtin.editfile import EditFileTool 
-# from src.tools.builtin.patchfile import PatchFileTool
 from src.tools.builtin.shell import ShellTool
-from src.tools.builtin.listdir import ListDirTool
-from src.tools.builtin.grep import GrepTool
-from src.tools.builtin.glob import GlobTool
 from src.tools.builtin.websearch import WebSearchTool
-from src.tools.builtin.webfetch import WebFetchTool
 from src.tools.builtin.todos import TodosTool
-from src.tools.builtin.memory import MemoryTool # TODO: explore other types of memory architectures
-from typing import List
-from src.tools.base import Tool
-from src.config.config import Config
-from src.tools.subagents import SubAgentTool, CODE_REVIEWER, CODE_INVESTIGATOR, SubAgentDefinition
+from src.tools.builtin.memory import MemoryTool 
+from src.tools.builtin.browser_use import BrowserUseTool
+from src.tools.builtin.vision_capture import VisionCaptureTool
+from src.tools.builtin.mcp_executor import MCPExecutorTool
+from src.tools.builtin.subagent import SubAgentTool
+
 __all__ = [
     "ReadFileTool",
     "WriteFileTool",
     "EditFileTool",
     "ShellTool",
-    "ListDirTool",
-    "GrepTool",
-    "GlobTool",
     "WebSearchTool",
-    "WebFetchTool",
     "MemoryTool",
     "TodosTool",
+    "BrowserUseTool",
+    "VisionCaptureTool",
+    "MCPExecutorTool",
+    "SubAgentTool",
 ]
 
-def get_all_builtin_tools(config: Config) -> List[Tool]:
+def get_all_builtin_tools() -> List[Tool]:
     return [
-        ReadFileTool(config),
-        WriteFileTool(config),
-        EditFileTool(config),
-        ShellTool(config),
-        ListDirTool(config),
-        GrepTool(config),
-        GlobTool(config),
-        WebSearchTool(config),
-        WebFetchTool(config),
-        MemoryTool(config),
-        TodosTool(config),
-    ]
-
-def get_default_sub_agent_definitions(config: Config) -> List[SubAgentDefinition]:
-    config
-    return [
-        CODE_REVIEWER,
-        CODE_INVESTIGATOR,
+        ReadFileTool,
+        WriteFileTool,
+        ShellTool,
+        EditFileTool,
+        WebSearchTool,
+        MemoryTool,
+        TodosTool,
+        BrowserUseTool,
+        VisionCaptureTool,
+        MCPExecutorTool,
+        SubAgentTool,
     ]
