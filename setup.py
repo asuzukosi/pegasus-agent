@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='pegasus',
+    name='pegasus-ai',
     version='0.1.0',
     description='A lightweight terminal agent framework for long-running modular agents',
     url='https://github.com/asuzukosi/pegasus',

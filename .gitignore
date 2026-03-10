@@ -160,3 +160,4 @@ cython_debug/
 # Pegasus runtime files
 .pegasus/
 pegasus_memory.json
+secrete.txt
