@@ -56,3 +56,6 @@ pegasus-cli = "pegasus.cli.cli:run_cli"
 where = ["."]
 include = ["pegasus*"]
 exclude = ["tests*", "docs*", "assets*", "pegasus.core*"]
+
+[tool.setuptools.package-data]
+pegasus = ["prompts/*.j2"]

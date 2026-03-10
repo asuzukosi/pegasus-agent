@@ -9,6 +9,8 @@ setup(
     author_email='keloasuzu@yahoo.com',
     license='BSD 2-clause',
     packages=find_packages(exclude=['tests*', 'docs*', 'assets*', 'pegasus.core*']),
+    include_package_data=True,
+    package_data={'pegasus': ['prompts/*.j2']},
     install_requires=[
         'art',
         'click',
