@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pegasus-ai"
-version = "0.1.0"
+version = "0.1.2"
 description = "A lightweight terminal agent framework for long-running modular agents"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -26,30 +26,22 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "anthropic",
+    "art",
     "click",
+    "ddgs",
+    "fastmcp",
+    "jinja2",
     "openai",
+    "opencv-python",
+    "pillow",
+    "platformdirs",
+    "playwright",
+    "pydantic",
+    "python-dotenv",
     "retry",
     "rich",
     "tiktoken",
-    "platformdirs",
     "tomli",
-    "duckduckgo-search",
-    "ddgs",
-    "fastmcp",
-    "pydantic",
-    "python-dotenv",
-    "markdownify",
-    "beautifulsoup4",
-    "lxml",
-    "requests",
-    "pytest-asyncio",
-    "diskcache",
-    "pillow",
-    "imageio-ffmpeg",
-    "fake-useragent",
-    "PyJWT",
-    "pyyaml"
 ]
 
 [project.urls]
@@ -63,4 +55,4 @@ pegasus-cli = "pegasus.cli.cli:run_cli"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["pegasus*"]
-exclude = ["tests*", "docs*", "assets*"]
+exclude = ["tests*", "docs*", "assets*", "pegasus.core*"]
