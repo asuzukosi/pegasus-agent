@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pegasus-ai"
-version = "0.1.4"
+version = "0.1.5"
 description = "A lightweight terminal agent framework for long-running modular agents"
 readme = "README.md"
 requires-python = ">=3.9"

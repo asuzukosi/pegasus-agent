@@ -8,7 +8,7 @@ from pegasus.config.config import Config, ModelConfig
 from pegasus.session.session import Session
 from pegasus.cli.cli import run_cli
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 __all__ = [
     "Agent",
     "AgentEvent",
