@@ -5,7 +5,7 @@ from pegasus.agent.results import AgentEventType
 from pegasus.renderers.tui import TUI
 import sys
 from pathlib import Path
-from pegasus.config.config import Config
+from pegasus.config.config import Config, list_open_source_model_names
 from pegasus.config.loader import load_config
 
 
@@ -65,12 +65,16 @@ class CLI:
             self.tui.print_config()
             return True
         elif cmd_name == "model":
-            if cmd_args:
+            if cmd_args == "list":
+                self.tui._console.print(f"[info]Valid models: {', '.join(list_open_source_model_names())}[/info]")
+                return True
+            if cmd_args in list_open_source_model_names():
                 self._config.model_name = cmd_args
                 self.tui.print_config()
                 return True
             else:
-                self.tui._console.print(f"[error]Model name is required[/error]")
+                self.tui._console.print(f"[error]Model name is not valid[/error]")
+                self.tui._console.print(f"[error]Valid models: {', '.join(list_open_source_model_names())}[/error]")
                 return True
     
 

@@ -8,6 +8,8 @@ Pegasus is a terminal-first agent runtime for long-running tasks. It combines a 
 
 It is designed for workflows that need more than simple code generation. Pegasus can keep working across multiple turns, use tools to interact with the local machine and external systems, and continue operating even as context grows.
 
+Pegasus treats open source models as first class citizens. It has no support for closed source models and aims to be the best agentic runtime harness for using open source models.
+
 ## Features
 
 - terminal agent workflow with streaming responses and tool execution
@@ -17,6 +19,22 @@ It is designed for workflows that need more than simple code generation. Pegasus
 - MCP executor for listing and composing MCP tools as Python-style functions
 - subagents for delegated task execution
 - automatic context compression when conversation history approaches the model limit
+- open source models treated as first class citizens
+
+## Model Support
+
+Pegasus currently supports the following open source models:
+
+- `kimi-k2.5`
+- `glm5`
+- `qwen3.5-122b`
+- `minimax-m2.5`
+- `olmo3.1-32b-instruct`
+- `nemotron-3-nano-30b`
+- `devstral2`
+- `mercury2`
+
+Pegasus does not support closed source models.
 
 ## Installation
 
@@ -86,13 +104,20 @@ pegasus-cli --message "list the builtin tools and explain what each one is for"
 Switch models from inside the CLI:
 
 ```text
-/model gpt-5.4
+/model kimi-k2.5
+```
+
+List the supported models from inside the CLI:
+
+```text
+/model list
 ```
 
 Useful built-in commands:
 
 - `/help`
 - `/config`
+- `/model list`
 - `/model <name>`
 - `/clear`
 - `/exit`

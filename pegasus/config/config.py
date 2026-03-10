@@ -83,27 +83,6 @@ MODEL_OPTIONS: Dict[str, ModelConfig] = {
     "mercury2": ModelConfig(name="inception/mercury-2", base_url="https://openrouter.ai/api/v1", temperature=1, 
                             context_window=128_000, tool_support=True, vision_support=False,
                             cost_per_million_input_tokens=0.25, cost_per_million_output_tokens=0.75, nitro_support=False, open_source=True),
-
-    # closed models
-    "gpt-5.4": ModelConfig(name="openai/gpt-5.4", base_url="https://openrouter.ai/api/v1", temperature=1, 
-                           context_window=1_050_000, tool_support=True, vision_support=True, nitro_support=True,
-                           cost_per_million_input_tokens=2.5, cost_per_million_output_tokens=15, open_source=False),
-    "codex-5.3": ModelConfig(name="openai/gpt-5.3-codex", base_url="https://openrouter.ai/api/v1", temperature=1, context_window=400_000, 
-                             tool_support=True, vision_support=True, nitro_support=True,
-                             cost_per_million_input_tokens=1.75, cost_per_million_output_tokens=14, open_source=False),
-    "claude-sonnet-4.6": ModelConfig(name="anthropic/claude-sonnet-4.6", base_url="https://openrouter.ai/api/v1", 
-                                     temperature=1, context_window=1_000_000, tool_support=True, vision_support=True,
-                                     nitro_support=True,
-                                     cost_per_million_input_tokens=3, cost_per_million_output_tokens=15, open_source=False),
-    "claude-opus-4.6": ModelConfig(name="anthropic/claude-opus-4.6", base_url="https://openrouter.ai/api/v1", 
-                                   temperature=1, context_window=1_000_000, tool_support=True, vision_support=True,
-                                   nitro_support=True,
-                                   cost_per_million_input_tokens=5, cost_per_million_output_tokens=25, open_source=False),
-
-    "gemini-3.1-flash-lite": ModelConfig(name="google/gemini-3.1-flash-lite-preview", base_url="https://openrouter.ai/api/v1", 
-                                         temperature=1, context_window=1_048_576, 
-                                         tool_support=True, vision_support=True, nitro_support=True,
-                                         cost_per_million_input_tokens=0.25, cost_per_million_output_tokens=1.5, open_source=False),
 }
 
 def list_default_model_names() -> list:

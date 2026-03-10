@@ -93,7 +93,7 @@ class LLMClient:
         except RateLimitError:
             yield StreamEvent(
                 type=StreamEventType.ERROR,
-                error='Rate limit exceeded',
+                error='Rate limit exceeded ensure your API_KEY is set and valid from (https://openrouter.ai/keys) or set it in the .env file',
                 text_delta=None,
                 finish_reason=None,
                 usage=None,
@@ -102,7 +102,7 @@ class LLMClient:
         except APIError:
             yield StreamEvent(
                 type=StreamEventType.ERROR,
-                error='API error',
+                error='API error ensure your API_KEY is set and valid from (https://openrouter.ai/keys) or set it in the .env file',
                 text_delta=None,
                 finish_reason=None,
                 usage=None,
