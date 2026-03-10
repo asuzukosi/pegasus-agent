@@ -6,7 +6,7 @@ import os, sys
 from datetime import datetime
 from pegasus.tools.base import Tool
 
-template_loader = jinja2.FileSystemLoader(searchpath="pegasus/prompts")
+template_loader = jinja2.FileSystemLoader(searchpath="./pegasus/prompts")
 template_env = jinja2.Environment(loader=template_loader)
 
 def get_system_prompt(config: Config) -> str:
