@@ -86,17 +86,28 @@ class BrowserUseTool(Tool):
         self._step = 0
 
     async def _ensure_page(self):
-        from playwright.async_api import async_playwright
+        from playwright.async_api import Error as PlaywrightError, async_playwright
 
         async with self._lock:
             if self._page is not None and not self._page.is_closed():
                 return self._page
             self._page = None
             self._playwright = await async_playwright().start()
-            self._browser = await self._playwright.chromium.launch(
-                headless=False,
-                args=[f"--window-size={self.WINDOW_WIDTH},{self.WINDOW_HEIGHT}"],
-            )
+            try:
+                self._browser = await self._playwright.chromium.launch(
+                    headless=False,
+                    args=[f"--window-size={self.WINDOW_WIDTH},{self.WINDOW_HEIGHT}"],
+                )
+            except PlaywrightError as e:
+                message = str(e).lower()
+                if "executable doesn't exist" in message or "please run the following command" in message:
+                    await self._playwright.stop()
+                    self._playwright = None
+                    raise RuntimeError(
+                        "playwright chromium is not installed. run the project install script or 'python -m playwright install chromium' and try again."
+                    ) from e
+                else:
+                    raise
             self._context = await self._browser.new_context(
                 viewport={"width": self.VIEWPORT_WIDTH, "height": self.VIEWPORT_HEIGHT}
             )
