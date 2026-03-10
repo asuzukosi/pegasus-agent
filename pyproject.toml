@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pegasus"
+version = "0.1.0"
+description = "A lightweight terminal agent framework for long-running modular agents"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "BSD-2-Clause"}
+authors = [
+    {name = "Asuzu Kosi", email = "keloasuzu@yahoo.com"}
+]
+keywords = ["cli", "agent", "ai", "terminal", "automation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "anthropic",
+    "click",
+    "openai",
+    "retry",
+    "rich",
+    "tiktoken",
+    "platformdirs",
+    "tomli",
+    "duckduckgo-search",
+    "ddgs",
+    "fastmcp",
+    "pydantic",
+    "python-dotenv",
+    "markdownify",
+    "beautifulsoup4",
+    "lxml",
+    "requests",
+    "pytest-asyncio",
+    "diskcache",
+    "pillow",
+    "imageio-ffmpeg",
+    "fake-useragent",
+    "PyJWT",
+    "pyyaml"
+]
+
+[project.urls]
+Homepage = "https://github.com/asuzukosi/pegasus"
+Repository = "https://github.com/asuzukosi/pegasus"
+Issues = "https://github.com/asuzukosi/pegasus/issues"
+
+[project.scripts]
+pegasus-cli = "pegasus.cli.cli:run_cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pegasus*"]
+exclude = ["tests*", "docs*", "assets*"]
