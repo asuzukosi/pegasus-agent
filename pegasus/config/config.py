@@ -218,7 +218,7 @@ class Config(BaseModel):
     def validate(self) -> List[str] | None:
         errors: List[str] = []
         if not self.api_key:
-            errors.append("API key is required")
+            errors.append("API key is required export API_KEY=sk-xxx from (https://openrouter.ai/keys) or set it in the .env file")
 
         if not self.cwd.exists():
             errors.append(f"Current working directory does not exist: {self.cwd}")
