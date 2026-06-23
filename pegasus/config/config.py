@@ -97,14 +97,10 @@ def get_model_config(model_name: str) -> ModelConfig:
     return config
 
 
-def list_open_source_model_names() -> list:
+def list_model_names() -> list:
     """Return model keys for all open source models."""
-    return [key for key, cfg in MODEL_OPTIONS.items() if cfg.open_source]
+    return [key for key, cfg in MODEL_OPTIONS.items()]
 
-
-def list_closed_source_model_names() -> list:
-    """Return model keys for all closed source models."""
-    return [key for key, cfg in MODEL_OPTIONS.items() if not cfg.open_source]
 
 
 def get_model_options_by_context_window() -> List[Dict[str, Any]]:

@@ -1,7 +1,7 @@
 from typing import AsyncGenerator
 from typing import List, Dict, Any
 import json
-from pegasus.agent.results import AgentEvent, AgentEventType
+from pegasus.runtime.results import AgentEvent, AgentEventType
 from pegasus.context.data import ToolResultMessage
 from pegasus.client.response import TokenUsage, ToolCall, StreamEventType
 from pegasus.session.session import Session

@@ -4,7 +4,7 @@ import asyncio
 
 from pydantic import BaseModel, Field
 
-from pegasus.agent.results import AgentEventType
+from pegasus.runtime.results import AgentEventType
 from pegasus.config.config import Config
 from pegasus.tools.base import Tool
 from pegasus.tools.data import ToolInvocation, ToolResult, ToolType
@@ -35,7 +35,7 @@ class SubAgentTool(Tool):
         self._config = config
 
     async def _run_subagent(self, params: SubAgentParams) -> ToolResult:
-        from pegasus.agent.agent import Agent
+        from pegasus.runtime.agent import Agent
 
         sub_config = Config(**self._config.model_dump(exclude_none=True))
         sub_config.max_turns = params.max_turns
