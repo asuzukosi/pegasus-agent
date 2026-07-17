@@ -3,6 +3,7 @@ import jinja2
 from pegasus.config.config import Config
 import json
 import os, sys
+import platform
 from datetime import datetime
 from pegasus.tools.base import Tool
 
@@ -51,7 +52,8 @@ def _get_environment_section(config: Config) -> str:
     template = template_env.get_template("environment.j2")
     cwd = config.cwd.as_posix()
     shell_info = _get_shell_info()
-    return template.render({"now": datetime.now(), "os_info": os.uname().sysname, "cwd": cwd, "shell_info": shell_info})
+    os_info = platform.system()
+    return template.render({"now": datetime.now(), "os_info": os_info, "cwd": cwd, "shell_info": shell_info})
 
 def _get_security_guidelines_section(config: Config) -> str:
     """
