@@ -66,6 +66,12 @@ Set your API key:
 export API_KEY="sk-xxx"
 ```
 
+Windows PowerShell Version:
+
+```bash
+$env:API_KEY="sk-xxx"
+```
+
 ## Quick Start
 
 Run the CLI:
@@ -185,27 +191,3 @@ Python import package:
 ```python
 import pegasus
 ```
-
-### Windows
-
-Pegasus currently uses the Unix-specific function `os.uname()`, which is not available on Windows.
-
-In `pegasus/prompts/system.py`, replace:
-
-```python
-os.uname().sysname
-```
-
-with:
-
-```python
-platform.system()
-```
-
-Then, if it is not already present, add the line:
-
-```python
-import platform
-```
-
-This change allows Pegasus to detect the operating system correctly on Windows while maintaining compatibility with Linux and macOS.
