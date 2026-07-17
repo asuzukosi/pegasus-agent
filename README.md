@@ -66,6 +66,12 @@ Set your API key:
 export API_KEY="sk-xxx"
 ```
 
+Windows PowerShell Version:
+
+```bash
+$env:API_KEY="sk-xxx"
+```
+
 ## Quick Start
 
 Run the CLI:
