@@ -4,7 +4,7 @@ setup(
     name='pegasus-ai',
     version='0.1.7',
     description='A lightweight terminal agent framework for long-running modular agents',
-    url='https://github.com/asuzukosi/pegasus',
+    url='https://github.com/asuzukosi/pegasus-agent',
     author='Asuzu Kosi',
     author_email='keloasuzu@yahoo.com',
     license='BSD 2-clause',

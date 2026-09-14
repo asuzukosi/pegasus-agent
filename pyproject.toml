@@ -44,9 +44,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/asuzukosi/pegasus"
-Repository = "https://github.com/asuzukosi/pegasus"
-Issues = "https://github.com/asuzukosi/pegasus/issues"
+Homepage = "https://github.com/asuzukosi/pegasus-agent"
+Repository = "https://github.com/asuzukosi/pegasus-agent"
+Issues = "https://github.com/asuzukosi/pegasus-agent/issues"
 
 [project.scripts]
 pegasus-cli = "pegasus.cli.cli:run_cli"

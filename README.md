@@ -1,7 +1,7 @@
 # Pegasus
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/asuzukosi/pegasus/main/assets/pegasus.png" alt="Pegasus Logo" width="300"/>
+  <img src="https://raw.githubusercontent.com/asuzukosi/pegasus-agent/main/assets/pegasus.png" alt="Pegasus Logo" width="300"/>
 </p>
 
 Pegasus is a terminal-first agent runtime for long-running tasks. It combines a streaming CLI, tool calling, browser control, camera capture, MCP execution, subagents, and automatic context compression in one package.
@@ -47,8 +47,8 @@ pip install pegasus-ai
 Install from source:
 
 ```bash
-git clone https://github.com/asuzukosi/pegasus.git
-cd pegasus
+git clone https://github.com/asuzukosi/pegasus-agent.git
+cd pegasus-agent
 pip install -e .
 ```
 
