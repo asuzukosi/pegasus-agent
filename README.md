@@ -54,7 +54,7 @@ pip install -e .
 
 ## Requirements
 
-- python 3.9 or newer
+- python 3.10 or newer
 - an API key exposed as `API_KEY`
 - optional local dependencies for advanced tools, such as a working browser environment for Playwright-based automation and a camera device for vision capture
 
