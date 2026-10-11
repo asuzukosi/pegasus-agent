@@ -144,6 +144,19 @@ args = [".pegasus/mcp_servers/event_booking_server.js"]
 cwd = "."
 ```
 
+Remote MCP servers work through the same table with a `command` that bridges to a hosted endpoint. For example, optional You.com web search via its keyless free profile (requires Node.js for the `npx` bridge):
+
+```toml
+[mcp_servers.you]
+enabled = true
+startup_timeout_sec = 30.0
+command = "npx"
+args = ["-y", "mcp-remote@0.14.3", "https://api.you.com/mcp?profile=free"]
+cwd = "."
+```
+
+Once enabled, the server's tools (`you-search`, `you-discover`) surface through the MCP executor alongside the built-in `websearch` tool, which keeps its DuckDuckGo behavior. `startup_timeout_sec` is raised above the 10.0 default because the first `npx` run fetches the bridge package. The free profile needs no API key; the authenticated endpoint (`https://api.you.com/mcp`) exposes the full You.com toolset.
+
 ## Examples
 
 Ask Pegasus to inspect a codebase:
